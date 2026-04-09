@@ -45,16 +45,15 @@ O gestor segue estas etapas diariamente, nesta ordem. Cada etapa depende da ante
 
 ## Status do Fluxo
 
-Ao conectar ao tenant, gerar um diagnóstico rápido do mês atual:
+Ao conectar ao tenant, gerar um diagnóstico rápido do mês atual com **uma única chamada**:
 
 ```
-list_imports(mês atual)              → fontes importadas vs faltantes (etapa 1)
-list_settlements                     → pendentes de liquidação (etapa 2)
-transaction_stats(mês atual)         → uncategorized, pending, overdue (etapa 3-4)
-analyze_supplier_payments(mês atual) → pagamentos sem fornecedor (etapa 5)
-list_sales(unreconciled)             → vendas sem conciliação (etapa 6)
-get_cost_analysis(view=by_service)   → serviços sem custo cadastrado (etapa 7)
+get_workflow_status(tenant_id, period=mês atual) → status consolidado das 7 etapas + resumo financeiro
 ```
+
+Essa tool retorna, em um único payload, o status (`ok` / `warning`) de cada etapa (`imports`, `settlements`, `categorization`, `competence`, `providers`, `reconciliation`, `costs`) mais `total_credits` / `total_debits` / `balance`. Mapear diretamente para o checklist abaixo.
+
+> **Não** chamar `list_imports`, `transaction_stats`, `analyze_supplier_payments`, `list_sales(unreconciled)` ou `get_cost_analysis` no diagnóstico inicial — o `get_workflow_status` já cobre tudo. Só aprofunde nessas tools se o gestor pedir detalhe ou ao executar uma etapa específica.
 
 Apresentar como checklist:
 

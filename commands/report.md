@@ -26,13 +26,13 @@ Argumento recebido: `$ARGUMENTS`
 
 ## Pré-checagem de Qualidade
 
-Antes de gerar o relatório, avisar o gestor se o mês **não está pronto** para fechamento:
+Antes de gerar o relatório, avisar o gestor se o mês **não está pronto** para fechamento. Usar uma única chamada consolidada:
 
 ```
-transaction_stats(período)        → count_uncategorized, count_pending
-analyze_supplier_payments(período) → pagamentos sem fornecedor
-list_sales(status=unreconciled)   → vendas sem conciliação
+get_workflow_status(tenant_id, period=YYYY-MM) → status de categorização, fornecedores, reconciliação, competência, custos
 ```
+
+Verificar os campos `categorization.status`, `providers.status`, `reconciliation.status`, `competence.status` e `costs.status`. Se algum estiver em `warning`, apresentar o impacto. Só aprofunde em `transaction_stats` / `analyze_supplier_payments` / `list_sales` se o gestor quiser detalhar as pendências.
 
 Se há pendências significativas, **apresentar o impacto** antes de gerar o relatório:
 
