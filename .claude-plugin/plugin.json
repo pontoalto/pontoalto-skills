@@ -1,0 +1,21 @@
+{
+  "name": "pontoalto",
+  "description": "Assistente financeiro PontoAlto: guia gestores brasileiros no fechamento de mês (importações, categorização, competência, fornecedores, conciliação, custos e relatórios).",
+  "version": "0.2.0",
+  "author": {
+    "name": "Gerson Valle"
+  },
+  "keywords": [
+    "pontoalto",
+    "finance",
+    "accounting",
+    "mcp",
+    "brazil",
+    "dre",
+    "conciliation",
+    "categorization"
+  ],
+  "homepage": "https://pontoalto.app",
+  "repository": "https://github.com/gmvale/pontoalto-skills",
+  "license": "MIT"
+}
