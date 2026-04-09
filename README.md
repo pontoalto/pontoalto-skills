@@ -66,6 +66,18 @@ Todos os commands aceitam a flag `--local` para apontar para o MCP server de des
 
 Claude Code plugin — consulte a [documentação oficial de plugins](https://code.claude.com/docs/en/plugins.md) para instalar.
 
+## Modelo recomendado
+
+O fluxo do PontoAlto é majoritariamente orquestração de tools MCP (listar, analisar, criar sugestões). Para isso, **Sonnet 4.6** é o melhor custo/benefício — bem mais rápido que Opus e com qualidade suficiente para categorização, conciliação e análise de DRE.
+
+| Modelo                  | Quando usar |
+|-------------------------|-------------|
+| `claude-sonnet-4-6`     | **Padrão recomendado.** Rápido e preciso para o dia a dia (`/pontoalto:manager`, `/categorize`, `/reconcile`, `/suppliers`). |
+| `claude-haiku-4-5`      | Máxima velocidade em tarefas diretas (ex: `/pontoalto:report`, categorizações simples via regras). Pode perder nuance em análises mais abertas. |
+| `claude-opus-4-6`       | Reserve para raciocínio pesado: inconsistências complexas no fechamento, decisões de competência ambíguas ou análises de custo não triviais. |
+
+Troque de modelo com `/model claude-sonnet-4-6`. Se quiser ainda mais velocidade sem mudar de modelo, `/fast` acelera o output.
+
 ## Regras de ouro do assistente
 
 O plugin opera com estas garantias:
