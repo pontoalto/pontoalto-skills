@@ -10,6 +10,8 @@ Transações importadas chegam sem categoria. O gestor precisa categorizar todas
 
 **Como verificar:** `transaction_stats` → `count_uncategorized`. Se > 0, há trabalho.
 
+**OBRIGATÓRIO — Formato WhatsApp:** quando listar transações para o gestor consultar a equipe, use **texto simples** — formato `N. DD/MM — Nome — R$ Valor`, sem tabelas markdown, pipes (`|`) ou negrito. Ver § Fluxo consulta.
+
 **OBRIGATÓRIO — Regras de categorização:** ao criar sugestões via `bulk_create_suggestions`, SEMPRE incluir `create_rule: true` e `rule_type: "contains"` em cada grupo/supplier_group. Exceções (ver Princípio 2 abaixo): pattern já existe como regra (`list_rules`) ou pattern é ambíguo (usado em categorias diferentes).
 
 **Se o gestor não responder:** marcar etapa como "aguardando resposta" e avançar para a próxima etapa. Retomar quando o gestor fornecer as respostas.
@@ -44,20 +46,25 @@ Quando há transações sem categoria que não têm sugestão automática (ex: P
 3. Apresentar em **texto simples** (sem tabela markdown) — pronto para copiar e colar no WhatsApp:
 
 ```
-Transações sem categoria — 03/2026
+*[Tenant] — Pix sem categoria (lista N)*
+Faltam estes pra fechar [mês]. Me diga a que se refere:
 
-1. 28/03 — Edson Francisco Filho — R$ 666,00
-2. 27/03 — Wallas Lima — R$ 1.650,00
-3. 25/03 — José Aparecido dos Santos — R$ 49,90
+1. *JOAO DA SILVA* — R$ 49,90 (25/03)
 
-Total: 3 transações — R$ 2.365,90
+2. *Pedro Alves* — R$ 814,00 total
+   • R$ 148,00 (24/03) + R$ 666,00 (28/03)
+
+3. *MARIA SOUZA / MARIA DE SOUZA* — R$ 3.150,00 total
+   • R$ 1.500,00 (15/03) + R$ 1.650,00 (27/03)
 ```
 
-**Formatação WhatsApp:**
-- Uma linha por transação: `N. DD/MM — Nome — R$ Valor`
-- Total no final
-- Separar grupos distintos com linha em branco e subtítulo
-- NÃO usar: tabelas markdown, pipes (|), negrito (**), links
+**Formatação WhatsApp (asterisco = negrito nativo do WhatsApp, não markdown):**
+- Cabeçalho: `*[Tenant] — Pix sem categoria (lista N)*`
+- Linha de contexto: `Faltam estes pra fechar [mês]. Me diga a que se refere:`
+- Transação única: `N. *NOME* — R$ Valor (DD/MM)`
+- Múltiplas tx do mesmo destinatário: `N. *NOME* — R$ total total` + sub-item `   • R$ X (DD/MM) + R$ Y (DD/MM)`
+- Variação de nome: separar com `/` dentro do mesmo item — ex: `*MARIA SOUZA / MARIA DE SOUZA*`
+- NÃO usar: tabelas markdown, pipes (`|`), negrito markdown (`**`), links
 
 4. **Sempre buscar detalhes de TODAS as transações** — não listar IDs sem nome/valor
 5. Ordenar por data (mais recente primeiro) ou valor (maior primeiro, conforme contexto)
