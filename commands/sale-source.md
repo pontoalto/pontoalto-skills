@@ -64,13 +64,13 @@ Substituir placeholders pelos headers reais do CSV do gestor. **Não inventar ch
 preview_sale_source_definition(csv_content=<amostra>, spec=<spec_atual>)
 ```
 
-Analisar: `headers`, `missing_headers`, `items_count`, `skipped_count`, `errors`, **`mapping_table`**.
+Analisar: `headers`, `missing_headers`, `items_count`, `sales_count`, `skipped_count`, `errors`, **`mapping_table`** (e opcionalmente `sales` para mostrar o agrupamento final).
 
-**Primeira chamada:** apresentar a `mapping_table` ao gestor — ela lista as 9 colunas padrão da UI (DESCRIÇÃO, FORNECEDOR, CLIENTE, DATA REF., QTD, UNITÁRIO, TOTAL, PAGAMENTO, CANCELADA) com `mapped`, `csv_source`, `parser` e `kind`. Colunas com `mapped=false` aparecem vazias na UI de importação — confirmar com o gestor se é decisão consciente.
+**Primeira chamada:** apresentar a `mapping_table` ao gestor — ela vem **agrupada por tabela alvo**: `sale` (3 colunas que populam `sales`: Ref. Cliente, Cliente, CPF) e `sale_item` (8 colunas que populam `sale_items`: Item, Fornecedor, Data de Referência, Qtd, Valor Unit., Valor Cobrado, Forma Pgto, Cancelado). Cada linha traz `mapped`, `csv_source`, `parser` e `kind`. Colunas com `mapped=false` aparecem vazias na UI de importação — confirmar com o gestor se é decisão consciente, com atenção redobrada a `customer.reference` (se ficar sem mapear, todos os itens caem num único Sale — bug grave na maioria dos casos).
 
-**Critério de sucesso:** `missing_headers == []`, `errors == []`, `items_count` bate com o esperado, e nenhum `mapped=false` inesperado na `mapping_table`.
+**Critério de sucesso:** `missing_headers == []`, `errors == []`, `items_count` e `sales_count` batem com o esperado, e nenhum `mapped=false` inesperado na `mapping_table`.
 
-Iterar sem limite. Reportar brevemente a cada iteração: "Preview X — 18 itens OK, 0 erros, 2 linhas ignoradas (totais no rodapé), mapping_table OK".
+Iterar sem limite. Reportar brevemente a cada iteração: "Preview X — 12 vendas / 18 itens OK, 0 erros, 2 linhas ignoradas (totais no rodapé), mapping_table OK".
 
 Se o gestor indicar que está tudo certo, avançar para salvar. Se pedir ajustes, iterar mais — lembrando que cada preview recalcula a `mapping_table`.
 
@@ -85,17 +85,23 @@ Vou salvar:
   • Nome:       Vendas Sistema XPTO
   • Key:        xpto_vendas
   • Operação:   criar nova | atualizar existente
-  • Preview OK: 18 itens, 0 erros, 0 linhas ignoradas
+  • Preview OK: 12 vendas, 18 itens, 0 erros, 0 linhas ignoradas
   • Mapeamento (mapping_table):
-      - DESCRIÇÃO   ← Produto
-      - FORNECEDOR  —  não mapeado
-      - CLIENTE     ← Cliente
-      - DATA REF.   ← Emissão (date_br)
-      - QTD         —  não mapeado
-      - UNITÁRIO    —  não mapeado
-      - TOTAL       ← Valor Total (money_br)
-      - PAGAMENTO   ← Forma Pagto
-      - CANCELADA   —  computado via row_filter
+
+    Sale (sales):
+      - Ref. Cliente       ← Pedido
+      - Cliente            ← Cliente
+      - CPF                —  não mapeado
+
+    SaleItem (sale_items):
+      - Item               ← Produto
+      - Fornecedor         —  não mapeado
+      - Data de Referência ← Emissão (date_br)
+      - Qtd                —  não mapeado
+      - Valor Unit.        —  não mapeado
+      - Valor Cobrado      ← Valor Total (money_br)
+      - Forma Pgto         ← Forma Pagto
+      - Cancelado          —  computado via row_filter
 
 [Salvar] [Revisar mais uma vez] [Cancelar]
 ```

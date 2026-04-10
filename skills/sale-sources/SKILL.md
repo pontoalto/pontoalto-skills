@@ -1,7 +1,7 @@
 ---
 name: sale-sources
-description: "Guia para montar, testar e salvar definições de fontes de venda customizadas (custom CSV importers) via MCP, sem precisar acessar o código do sistema. Cobre o DSL declarativo, o loop de preview iterativo, a mapping_table devolvida pelo MCP e as exceções ao modelo de sugestões."
-version: 0.2.0
+description: "Guia para montar, testar e salvar definições de fontes de venda customizadas (custom CSV importers) via MCP, sem precisar acessar o código do sistema. Cobre o DSL declarativo, o loop de preview iterativo, a mapping_table devolvida pelo MCP (agrupada por Sale vs SaleItem) e as exceções ao modelo de sugestões."
+version: 0.3.0
 ---
 
 # Ponto Alto — Fontes de Venda Customizadas
@@ -26,9 +26,9 @@ Todas no prefixo do servidor escolhido (`mcp__claude_ai_Ponto_Alto__` ou `mcp__p
 |------|------|----------------|
 | `list_sale_source_definitions` | leitura | Ver o que já existe antes de criar nova |
 | `get_sale_source_definition` | leitura | Inspecionar uma spec existente (útil como referência) |
-| `get_sale_source_dsl_reference` | leitura | **Referência completa do DSL** — resolvers, parsers, modifiers, operators, row filters, enums, recipes + `ui_columns_reference` (9 colunas padrão da UI) |
+| `get_sale_source_dsl_reference` | leitura | **Referência completa do DSL** — resolvers, parsers, modifiers, operators, row filters, enums, recipes + `ui_columns_reference` agrupada por `sale` (3 cols) e `sale_item` (8 cols) |
 | `get_sale_source_spec_template` | leitura | Template inicial (`minimal`, `feegow_like`, `yzidro_like`) com placeholders |
-| `preview_sale_source_definition` | leitura | Testa a spec contra um CSV amostra **sem persistir nada** — retorna headers, itens parseados, erros, linhas ignoradas **e `mapping_table`** (spec → colunas da UI) |
+| `preview_sale_source_definition` | leitura | Testa a spec contra um CSV amostra **sem persistir nada** — retorna headers, `items` planos, `sales` agrupados (como vão ser persistidos), `items_count`, `sales_count`, erros, linhas ignoradas **e `mapping_table`** agrupada por `sale`/`sale_item` |
 | `save_sale_source_definition` | **escrita direta** | Cria ou atualiza (upsert por `key`). Não passa pela inbox |
 | `delete_sale_source_definition` | **escrita direta** | Remove a fonte. Falha se houver importações vinculadas |
 
@@ -88,34 +88,43 @@ O template vem com placeholders (`<HEADER_DESCRICAO>`, `<HEADER_DATA>`, etc.) �
 preview_sale_source_definition(csv_content=<amostra>, spec=<spec_atual>)
 ```
 
-O retorno tem um campo `mapping_table` — array com uma entrada por coluna padrão da UI, na ordem canônica:
+O retorno tem um campo `mapping_table` agrupado por tabela alvo — **`sale`** (3 colunas que populam `sales`) e **`sale_item`** (8 colunas que populam `sale_items`), espelhando a hierarquia Sale > SaleItems que o preview e o importador real persistem:
 
 ```jsonc
-[
-  {"ui_column": "DESCRIÇÃO",  "spec_field": "fields.description",    "required": true,  "mapped": true,  "csv_source": "Produto",     "parser": null,        "kind": "column"},
-  {"ui_column": "FORNECEDOR", "spec_field": "fields.provider_name",  "required": false, "mapped": false, "csv_source": null,         "parser": null,        "kind": null},
-  {"ui_column": "CLIENTE",    "spec_field": "customer.name",         "required": true,  "mapped": true,  "csv_source": "Cliente",     "parser": null,        "kind": "column"},
-  {"ui_column": "DATA REF.",  "spec_field": "fields.reference_date", "required": true,  "mapped": true,  "csv_source": "Emissão",     "parser": "date_br",   "kind": "column"},
-  {"ui_column": "QTD",        "spec_field": "fields.quantity",       "required": false, "mapped": false, "csv_source": null,         "parser": null,        "kind": null},
-  {"ui_column": "UNITÁRIO",   "spec_field": "fields.unit_price",     "required": false, "mapped": false, "csv_source": null,         "parser": null,        "kind": null},
-  {"ui_column": "TOTAL",      "spec_field": "fields.total_paid",     "required": true,  "mapped": true,  "csv_source": "Valor Total", "parser": "money_br",  "kind": "column"},
-  {"ui_column": "PAGAMENTO",  "spec_field": "fields.payment_method", "required": false, "mapped": true,  "csv_source": "Forma Pagto", "parser": null,        "kind": "column"},
-  {"ui_column": "CANCELADA",  "spec_field": "fields.is_cancelled",   "required": false, "mapped": false, "csv_source": null,         "parser": null,        "kind": null}
-]
+{
+  "sale": [
+    {"ui_column": "Ref. Cliente", "spec_field": "customer.reference",   "required": true,  "mapped": true,  "csv_source": "Pedido",      "parser": null,       "kind": "column"},
+    {"ui_column": "Cliente",      "spec_field": "customer.name",        "required": true,  "mapped": true,  "csv_source": "Cliente",     "parser": null,       "kind": "column"},
+    {"ui_column": "CPF",          "spec_field": "customer.cpf",         "required": false, "mapped": false, "csv_source": null,          "parser": null,       "kind": null}
+  ],
+  "sale_item": [
+    {"ui_column": "Item",               "spec_field": "fields.description",    "required": true,  "mapped": true,  "csv_source": "Produto",     "parser": null,       "kind": "column"},
+    {"ui_column": "Fornecedor",         "spec_field": "fields.provider_name",  "required": false, "mapped": false, "csv_source": null,          "parser": null,       "kind": null},
+    {"ui_column": "Data de Referência", "spec_field": "fields.reference_date", "required": true,  "mapped": true,  "csv_source": "Emissão",     "parser": "date_br",  "kind": "column"},
+    {"ui_column": "Qtd",                "spec_field": "fields.quantity",       "required": false, "mapped": false, "csv_source": null,          "parser": null,       "kind": null},
+    {"ui_column": "Valor Unit.",        "spec_field": "fields.unit_price",     "required": false, "mapped": false, "csv_source": null,          "parser": null,       "kind": null},
+    {"ui_column": "Valor Cobrado",      "spec_field": "fields.total_paid",     "required": true,  "mapped": true,  "csv_source": "Valor Total", "parser": "money_br", "kind": "column"},
+    {"ui_column": "Forma Pgto",         "spec_field": "fields.payment_method", "required": false, "mapped": true,  "csv_source": "Forma Pagto", "parser": null,       "kind": "column"},
+    {"ui_column": "Cancelado",          "spec_field": "fields.is_cancelled",   "required": false, "mapped": false, "csv_source": null,          "parser": null,       "kind": null}
+  ]
+}
 ```
 
-Semântica dos campos:
+Semântica dos campos (iguais dos dois lados):
 
 - `mapped` — `false` significa que a coluna vai aparecer **vazia (`—`)** na UI de importação
 - `csv_source` — quando `kind=column`, o header exato do CSV de onde o valor vem
 - `parser` — parser aplicado (`decimal_br`, `money_br`, `date_br`, etc.) — `null` quando não há parse
 - `kind` — `column` (from CSV), `literal` (valor fixo), `computed` (concat / if / operator / setting) ou `null` quando não mapeado
-- `required` — se `SpecValidator` rejeita spec sem esse campo mapeado
+- `required` — se `SpecValidator` rejeita spec sem esse campo mapeado. Obrigatórios: `customer.reference`, `customer.name`, `fields.description`, `fields.reference_date`, `fields.total_paid`
 
-Renderizar a `mapping_table` para o gestor como uma tabela legível e, em seguida, perguntar via `AskUserQuestion`:
+Além do `mapping_table`, o response também traz `sales` — array agrupado de `{customer_reference, customer_name, cpf, reference_date, total_revenue, items_count, items}` — que é exatamente como a spec vai persistir: cada entrada é 1 Sale com N SaleItems aninhados. O `total_revenue` já exclui itens com `is_cancelled=true`, espelhando o `SaleImportService`. Use isso pra mostrar ao gestor **quantas vendas vão ser criadas** (não só quantos itens) e se o agrupamento está como ele esperava.
 
-- Para cada linha com `mapped=false`, é de propósito? Ou existe a coluna no CSV e eu deveria mapear?
-- Colunas com `kind=computed` (ex: `CANCELADA` via `any` operator) — o gestor entende que o valor é derivado de uma regra, não de uma coluna direta?
+Renderizar a `mapping_table` para o gestor como **duas tabelas** (Sale e SaleItem) e, em seguida, perguntar via `AskUserQuestion`:
+
+- Para cada linha com `mapped=false`, é de propósito? Ou existe a coluna no CSV e eu deveria mapear? Dar atenção especial ao lado `sale`: se `customer.reference` vier `mapped=false`, todos os itens vão cair num mesmo Sale — bug grave na maioria dos casos
+- Colunas com `kind=computed` (ex: `Cancelado` via `any` operator) — o gestor entende que o valor é derivado de uma regra, não de uma coluna direta?
+- O número de `sales` (agrupamentos) bate com o esperado? Se o gestor achava "vou importar 30 vendas" e o `sales_count` devolveu 1, provavelmente `grouping_key` está errado
 - Algum campo não-padrão que ele quer preservar vai pra `raw_data`?
 
 **Nunca pular essa etapa.** Mesmo que o template escolhido no passo 4 pareça "completo", a `mapping_table` torna explícito o que a UI vai exibir — incluindo campos que o template deixou de fora.
@@ -129,12 +138,13 @@ preview_sale_source_definition(csv_content=<amostra>, spec=<spec_atual>)
 Analisar o retorno:
 - `headers` — o que o parser enxergou
 - `missing_headers` — obrigatórios que não bateram (maioria dos erros vem daqui)
-- `items_count` / `items` — quantidade e amostra de itens extraídos
+- `items_count` / `items` — quantidade e amostra de SaleItems extraídos (lista plana)
+- `sales_count` / `sales` — quantos Sales distintos serão criados e quais items vão em cada um (hierarquia final como o importador persiste)
 - `skipped_count` — linhas puladas por `row_filters`
 - `errors` — erros de parse em campos (ex: decimal inválido)
 - `mapping_table` — recompute-se a cada chamada; se o gestor alterou a spec em resposta ao passo 5, revisar a tabela antes de seguir
 
-**Critério de sucesso:** `missing_headers == []`, `errors == []`, `items_count` bate com o esperado e a `mapping_table` reflete decisões conscientes (nenhum `mapped=false` inesperado). Se `skipped_count > 0`, confirmar com o gestor que as linhas ignoradas são mesmo para ignorar (ex: totais no rodapé, linhas vazias).
+**Critério de sucesso:** `missing_headers == []`, `errors == []`, `items_count` e `sales_count` batem com o esperado, e a `mapping_table` reflete decisões conscientes (nenhum `mapped=false` inesperado). Se `skipped_count > 0`, confirmar com o gestor que as linhas ignoradas são mesmo para ignorar (ex: totais no rodapé, linhas vazias).
 
 Iterar: ajustar a spec → re-chamar `preview_sale_source_definition` → repetir. Sem limite — esse é o único jeito de validar sem tocar em produção.
 
@@ -147,17 +157,23 @@ Vou salvar esta fonte:
   • Nome: Vendas Sistema XPTO
   • Key: xpto_vendas
   • Operação: criar nova
-  • Último preview: 18 itens OK, 0 erros, 0 linhas ignoradas
+  • Último preview: 12 vendas, 18 itens OK, 0 erros, 0 linhas ignoradas
   • Mapeamento (da mapping_table do último preview):
-      - DESCRIÇÃO   ← Produto          (column)
-      - FORNECEDOR  —  não mapeado
-      - CLIENTE     ← Cliente          (column)
-      - DATA REF.   ← Emissão          (column, parse: date_br)
-      - QTD         —  não mapeado
-      - UNITÁRIO    —  não mapeado
-      - TOTAL       ← Valor Total      (column, parse: money_br)
-      - PAGAMENTO   ← Forma Pagto      (column)
-      - CANCELADA   —  computado por row_filter (confirmado no passo 5)
+
+    Sale (sales):
+      - Ref. Cliente       ← Pedido           (column)
+      - Cliente            ← Cliente          (column)
+      - CPF                —  não mapeado
+
+    SaleItem (sale_items):
+      - Item               ← Produto          (column)
+      - Fornecedor         —  não mapeado
+      - Data de Referência ← Emissão          (column, parse: date_br)
+      - Qtd                —  não mapeado
+      - Valor Unit.        —  não mapeado
+      - Valor Cobrado      ← Valor Total      (column, parse: money_br)
+      - Forma Pgto         ← Forma Pagto      (column)
+      - Cancelado          —  computado por row_filter (confirmado no passo 5)
 
 [Salvar] [Revisar mais uma vez] [Cancelar]
 ```
@@ -177,7 +193,7 @@ Depois de salva, a fonte **não importa automaticamente** — ela fica disponív
 - **A `mapping_table` do MCP é a fonte autoritativa.** Sempre renderizar a tabela apresentada ao gestor diretamente do payload de `preview_sale_source_definition` — nunca reescrever de cabeça ou inferir das chaves da spec. Isso elimina drift entre o que a UI realmente exibe e o que o gestor viu na conversa
 - **Apresentar a `mapping_table` ao gestor no primeiro preview E antes de cada save.** Linhas com `mapped=false` precisam ser decisão consciente — nunca pular "porque parece óbvio". Se o gestor corrige um `mapped=false` inesperado, re-rodar o preview
 - **Nunca editar uma fonte de produção sem preview antes.** `save_sale_source_definition` é upsert direto — sobrescreve sem histórico via MCP
-- **Nunca inventar chaves do DSL.** Se `get_sale_source_dsl_reference` não listou, não existe. A seção `ui_columns_reference` desse mesmo retorno lista as 9 colunas padrão da UI
+- **Nunca inventar chaves do DSL.** Se `get_sale_source_dsl_reference` não listou, não existe. A seção `ui_columns_reference` desse mesmo retorno lista as colunas padrão agrupadas por `sale` (3 colunas: Ref. Cliente, Cliente, CPF) e `sale_item` (8 colunas: Item, Fornecedor, Data de Referência, Qtd, Valor Unit., Valor Cobrado, Forma Pgto, Cancelado)
 - **Preview é barato, preview sempre.** O loop é: preview → ajustar → preview. Não tentar adivinhar a spec de primeira
 - **Mostrar a spec final ao gestor antes de salvar** (mesmo que ele não entenda JSON — ele precisa ver nome, key, e a `mapping_table` renderizada)
 - **Deleção só com confirmação dupla.** `delete_sale_source_definition` falha se há imports vinculados — se falhar, **não** tentar forçar; explicar que há histórico preso e sugerir apenas desabilitar (`enabled=false` via save)
