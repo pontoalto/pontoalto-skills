@@ -22,6 +22,7 @@ Você continua no controle: toda operação de escrita passa por sugestões na i
 | `/pontoalto:reconcile`   | Liquidar repasses de cartão/dinheiro e conciliar vendas com o extrato bancário. |
 | `/pontoalto:suppliers`   | Vincular fornecedores a pagamentos e ajustar datas de competência para o DRE. |
 | `/pontoalto:report`      | Gerar relatório mensal consolidado: DRE, orçado vs realizado e análise de custos. |
+| `/pontoalto:sale-source` | Montar ou ajustar uma fonte de venda customizada (CSV de sistema ainda não integrado), com loop de preview iterativo. |
 
 Todos os commands aceitam a flag `--local` para apontar para o MCP server de desenvolvimento local (útil para testes).
 
@@ -56,6 +57,12 @@ Todos os commands aceitam a flag `--local` para apontar para o MCP server de des
 /pontoalto:manager --local
 ```
 
+**Montar uma fonte de venda nova a partir de um CSV:**
+```
+/pontoalto:sale-source
+```
+Funciona sem acesso ao código do sistema — o Claude guia você por um loop de preview iterativo até a spec bater com o seu CSV, e só salva após sua confirmação. Requer perfil `admin` no tenant.
+
 ## Requisitos
 
 - [Claude Code](https://claude.com/claude-code) instalado
@@ -82,7 +89,7 @@ Troque de modelo com `/model claude-sonnet-4-6`. Se quiser ainda mais velocidade
 
 O plugin opera com estas garantias:
 
-- **Você tem a última palavra** — toda operação de escrita vai para a inbox como sugestão. As únicas exceções são liquidações de repasses (`create_settlements`) e recebíveis em dinheiro (`create_cash_settlements`).
+- **Você tem a última palavra** — toda operação de escrita vai para a inbox como sugestão. Exceções diretas (sem inbox): liquidações de repasses (`create_settlements`), recebíveis em dinheiro (`create_cash_settlements`) e gerenciamento de fontes de venda (`save_sale_source_definition`, `delete_sale_source_definition`) — nessas, o Claude sempre pede confirmação explícita antes de gravar.
 - **Prioriza impacto monetário** — maiores valores primeiro em qualquer listagem.
 - **Regras automáticas** — ao categorizar ou vincular fornecedor, cria regra (`contains`) para automatizar os próximos meses. Pattern ambíguo? Não cria a regra e avisa.
 - **Confidence transparente** — matches abaixo de 55% são ignorados; entre 55-69% são advisory; ≥ 70% viram sugestão.

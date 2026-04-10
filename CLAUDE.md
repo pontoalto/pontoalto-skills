@@ -13,7 +13,8 @@ pontoalto-skills/
 │   ├── categorize.md      # /pontoalto:categorize — só categorização
 │   ├── reconcile.md       # /pontoalto:reconcile — liquidações + conciliação
 │   ├── suppliers.md       # /pontoalto:suppliers — fornecedores + competência
-│   └── report.md          # /pontoalto:report — relatório mensal
+│   ├── report.md          # /pontoalto:report — relatório mensal
+│   └── sale-source.md     # /pontoalto:sale-source — fonte de venda customizada (DSL + preview loop)
 ├── skills/
 │   ├── financial-domain/
 │   │   └── SKILL.md       # Confidence scale, contexto financeiro brasileiro, exceções
@@ -21,8 +22,10 @@ pontoalto-skills/
 │   │   └── SKILL.md       # Fluxo automático, consulta e manual de categorização
 │   ├── reconciliation/
 │   │   └── SKILL.md       # Liquidações, conciliação de vendas, custos de serviços
-│   └── supplier-management/
-│       └── SKILL.md       # Competência e vinculação de fornecedores
+│   ├── supplier-management/
+│   │   └── SKILL.md       # Competência e vinculação de fornecedores
+│   └── sale-sources/
+│       └── SKILL.md       # DSL de fontes customizadas, preview iterativo, exceção à inbox
 ├── README.md              # Orientado ao gestor final
 └── CLAUDE.md              # Este arquivo — orientado ao desenvolvedor
 ```
@@ -36,6 +39,7 @@ Namespaceados automaticamente pelo `name` do plugin (`pontoalto`):
 - `/pontoalto:reconcile [--local]` — liquidações (cartão/dinheiro) + conciliação de vendas
 - `/pontoalto:suppliers [--local]` — vinculação de fornecedores + ajuste de competência
 - `/pontoalto:report [--local] [YYYY-MM]` — relatório mensal (DRE, orçado vs realizado, custos)
+- `/pontoalto:sale-source [--local] [nome|key]` — monta/ajusta fonte de venda customizada via DSL + preview iterativo (admin-only)
 
 > **Naming**: os arquivos em `commands/` **não** devem ser prefixados com o nome do plugin. O Claude Code faz o namespacing automaticamente via `{plugin-name}:{command-name}`. Prefixar o arquivo causa redundância (ex: `/pontoalto:pontoalto-manager`).
 
@@ -54,6 +58,7 @@ As instruções dos MCP servers (convenções de R$, datas, modelo de escrita vi
 - `categorization` — fluxos específicos de categorização (automático, consulta WhatsApp, manual)
 - `reconciliation` — liquidações e conciliação detalhada
 - `supplier-management` — fornecedores e competência
+- `sale-sources` — DSL de fontes customizadas, loop de preview, exceção à inbox (escrita direta em `save_sale_source_definition` / `delete_sale_source_definition`)
 
 ## Desenvolvimento local
 
