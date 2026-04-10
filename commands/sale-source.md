@@ -7,7 +7,7 @@ argument-hint: "[--local] [nome ou key da fonte]"
 
 Atalho para montar ou ajustar uma **Fonte de Venda** customizada. Use quando o gestor tem um CSV de um sistema ainda não integrado (ex: um ERP vertical, uma planilha exportada) e quer ensinar o PontoAlto a importar aquele layout.
 
-Responda em português. Use a skill `sale-sources` para o fluxo detalhado e `financial-domain` para o contexto de domínio (incluindo a exceção ao modelo de sugestões).
+Responda em português. **Todo o passo-a-passo, a forma de apresentar a `mapping_table`, as regras de ouro e a tabela de erros estão na skill `sale-sources`** — este arquivo é só o ponto de entrada. Também consulte `financial-domain` para o contexto de domínio (incluindo a exceção ao modelo de sugestões).
 
 ## MCP Server
 
@@ -16,110 +16,33 @@ Argumento recebido: `$ARGUMENTS`
 - Sem `--local`: tools com prefixo `mcp__claude_ai_Ponto_Alto__` (produção)
 - Com `--local`: tools com prefixo `mcp__pontoalto-local__` (desenvolvimento)
 
-`--local` é flag. Qualquer outra palavra no argumento é tratada como **nome ou key da fonte** que o gestor quer editar (se já existir) — se nada for encontrado, assumir criação de nova fonte.
+`--local` é flag. Qualquer outra palavra no argumento é tratada como **nome ou key da fonte** que o gestor quer editar (se já existir). Se nada for encontrado, assumir criação de nova fonte.
 
 ## Inicialização
 
-1. `list_tenants` — se 2+, perguntar qual usar via `AskUserQuestion`; se 1, usar automaticamente
-2. Confirmar conexão: nome do tenant + organização
-3. Verificar que o usuário é admin — se a primeira tool retornar 403, parar e explicar que esta operação exige perfil `admin`
+1. `list_tenants` — se 2+, perguntar qual usar via `AskUserQuestion`; se 1, usar automaticamente.
+2. Confirmar conexão: nome do tenant + organização.
+3. Verificar que o usuário é admin — se a primeira tool retornar 403, parar e explicar que esta operação exige perfil `admin`.
 
-## Dimensionamento (sempre executar primeiro)
+## O que fazer agora
 
-```
-list_sale_source_definitions()    → ver fontes existentes
-```
+Siga o fluxo completo descrito em `sale-sources/SKILL.md`. Ele cobre:
 
-Apresentar a lista ao gestor. Se o argumento livre bate com uma fonte existente (match parcial por nome ou key), oferecer via `AskUserQuestion`:
+- Dimensionamento via `list_sale_source_definitions` (com `last_used_at` e `sale_imports_count` para decidir entre editar vs. criar).
+- Coleta de amostra do CSV, nome, key e separador.
+- Carregamento do DSL via `get_sale_source_dsl_reference` (default `section=core` — compacto; passe `section=recipes` quando precisar de exemplos prontos).
+- Escolha do template via `get_sale_source_spec_template` (estilos `minimal`, `basic_1to1`, `grouped`, `feegow_like`, `yzidro_like`).
+- Loop de preview via `preview_sale_source_definition` analisando `mapping_table` (com `severity`), `header_suggestions`, `skipped_rows`, `errors` estruturados, `dedup_stats` e `unmapped_csv_columns`.
+- Confirmação dupla + `save_sale_source_definition`.
+- Safety net: `revert_sale_source_definition` restaura a versão anterior se algo deu errado.
 
-1. **Editar a fonte existente** — carrega spec atual via `get_sale_source_definition`
-2. **Criar uma nova fonte** — parte de um template
+**Não reescreva o fluxo aqui.** Se for preciso ajustar, edite `sale-sources/SKILL.md` (fonte única).
 
-Se não há match, ir direto para criação.
+## Regras de ouro (espelhadas da skill para referência rápida)
 
-## Coleta de contexto
-
-Antes de escrever qualquer spec, pedir ao gestor:
-
-- **Conteúdo de amostra do CSV** (colar na conversa — 10 a 30 linhas bastam)
-- **Nome** da fonte (ex: "Vendas Sistema XPTO")
-- **Key** (slug único, ex: `xpto_vendas`) — sugerir a partir do nome
-- **Separador** do CSV (`AskUserQuestion`: `,` / `;` / tab / outro)
-- **Linha do header** (default 0; perguntar apenas se a amostra sugerir metadados no topo)
-
-Se o gestor mencionar um formato conhecido ("parecido com Feegow", "parecido com Yzidro"), registrar para usar o template adequado no próximo passo.
-
-## Montagem da spec
-
-```
-get_sale_source_dsl_reference()                    → aprender o DSL (fonte única da verdade)
-get_sale_source_spec_template(style=...)           → baseline: feegow_like, yzidro_like ou minimal
-```
-
-Substituir placeholders pelos headers reais do CSV do gestor. **Não inventar chaves** — se a referência do DSL não lista, não existe.
-
-## Loop de preview (iterar)
-
-```
-preview_sale_source_definition(csv_content=<amostra>, spec=<spec_atual>)
-```
-
-Analisar: `headers`, `missing_headers`, `items_count`, `sales_count`, `skipped_count`, `errors`, **`mapping_table`** (e opcionalmente `sales` para mostrar o agrupamento final).
-
-**Primeira chamada:** apresentar a `mapping_table` ao gestor — ela vem **agrupada por tabela alvo**: `sale` (3 colunas que populam `sales`: Ref. Cliente, Cliente, CPF) e `sale_item` (8 colunas que populam `sale_items`: Item, Fornecedor, Data de Referência, Qtd, Valor Unit., Valor Cobrado, Forma Pgto, Cancelado). Cada linha traz `mapped`, `csv_source`, `parser` e `kind`. Colunas com `mapped=false` aparecem vazias na UI de importação — confirmar com o gestor se é decisão consciente, com atenção redobrada a `customer.reference` (se ficar sem mapear, todos os itens caem num único Sale — bug grave na maioria dos casos).
-
-**Critério de sucesso:** `missing_headers == []`, `errors == []`, `items_count` e `sales_count` batem com o esperado, e nenhum `mapped=false` inesperado na `mapping_table`.
-
-Iterar sem limite. Reportar brevemente a cada iteração: "Preview X — 12 vendas / 18 itens OK, 0 erros, 2 linhas ignoradas (totais no rodapé), mapping_table OK".
-
-Se o gestor indicar que está tudo certo, avançar para salvar. Se pedir ajustes, iterar mais — lembrando que cada preview recalcula a `mapping_table`.
-
-> Detalhe: a skill `sale-sources` tem o formato completo da apresentação da `mapping_table` e o que perguntar ao gestor em cada iteração.
-
-## Confirmar e salvar
-
-Antes de `save_sale_source_definition`, apresentar um **resumo de commit** via `AskUserQuestion`, **reincluindo a `mapping_table`** do último preview (renderizada a partir do payload do MCP — não de cabeça):
-
-```
-Vou salvar:
-  • Nome:       Vendas Sistema XPTO
-  • Key:        xpto_vendas
-  • Operação:   criar nova | atualizar existente
-  • Preview OK: 12 vendas, 18 itens, 0 erros, 0 linhas ignoradas
-  • Mapeamento (mapping_table):
-
-    Sale (sales):
-      - Ref. Cliente       ← Pedido
-      - Cliente            ← Cliente
-      - CPF                —  não mapeado
-
-    SaleItem (sale_items):
-      - Item               ← Produto
-      - Fornecedor         —  não mapeado
-      - Data de Referência ← Emissão (date_br)
-      - Qtd                —  não mapeado
-      - Valor Unit.        —  não mapeado
-      - Valor Cobrado      ← Valor Total (money_br)
-      - Forma Pgto         ← Forma Pagto
-      - Cancelado          —  computado via row_filter
-
-[Salvar] [Revisar mais uma vez] [Cancelar]
-```
-
-Só chamar `save_sale_source_definition` após confirmação explícita. Essa tool é **escrita direta, sem passar pela inbox** — documentado na skill `sale-sources`.
-
-## Encerramento
-
-Após salvar, explicar ao gestor:
-
-1. A fonte já está disponível na tela **Configurações > Fontes de Venda** do PontoAlto
-2. Recomendado: fazer um teste final com o CSV completo via "Testar com CSV" no próprio PontoAlto
-3. Depois disso, usar o importador normal de vendas e selecionar esta fonte
-
-## Regras de Ouro
-
-- **Preview sempre.** Nunca salvar sem pelo menos uma rodada de `preview_sale_source_definition` limpa
-- **Confirmação dupla antes de salvar ou deletar.** `save_sale_source_definition` e `delete_sale_source_definition` são escrita direta
-- **Nunca forçar deleção.** Se `delete_sale_source_definition` falhar por imports vinculados, sugerir apenas desabilitar (`enabled=false` via save)
-- **Admin-only.** Sem perfil admin, nenhuma tool desta família funciona — parar e explicar, não tentar contornar
-- **Priorizar por impacto:** se editando uma fonte em produção, alertar o gestor sobre o volume de imports históricos afetados antes de alterar
+- **Preview sempre.** Nunca salvar sem pelo menos uma rodada de `preview_sale_source_definition` com `status=ok`.
+- **A `mapping_table` do MCP é autoritativa** — renderize sempre a partir do payload, nunca de cabeça. Atenção redobrada em linhas com `severity=critical`.
+- **Nunca invente chaves do DSL.** Se `get_sale_source_dsl_reference` não listar, não existe.
+- **Confirmação dupla antes de salvar ou deletar.** `save_sale_source_definition` e `delete_sale_source_definition` são escrita direta.
+- **Admin-only.** Sem perfil admin, nenhuma tool desta família funciona.
+- **Se algo der errado depois de salvar**, chame `revert_sale_source_definition(key)` — ele lê o activity log e restaura a spec anterior.
