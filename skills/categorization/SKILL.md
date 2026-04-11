@@ -105,22 +105,32 @@ Quando `list_rules` mostrar uma regra que **não deveria mais estar criando efei
 ```
 create_suggestion({
   type: "general",
-  suggestable_type: "transaction",   // ou "sale" — qualquer record do tenant como âncora
-  suggestable_id: <id>,
+  // A sugestão aponta para a PRÓPRIA REGRA como suggestable — não uma transação "âncora".
+  // Isso garante dedup natural (uma update_rule pendente por regra) e descrição correta no inbox.
+  suggestable_type: "rule_categorization",  // rule_categorization | rule_provider | rule_competence
+  suggestable_id: <id_da_regra>,            // DEVE ser igual a action_params.rule_id
   action: "update_rule",             // ou "delete_rule"
   action_params: {
     rule_type: "categorization",     // discriminador: categorization | competence | provider
-    rule_id: <id_da_regra>,
+                                      // DEVE casar com suggestable_type (rule_<rule_type>)
+    rule_id: <id_da_regra>,           // DEVE ser igual a suggestable_id
     // Apenas os campos a alterar:
-    category_id: 42,                 // opcional
-    rule_match_type: "starts_with",  // opcional — nova match style (exact/starts_with/contains/regex)
-    priority: 100,                   // opcional
-    is_active: true                  // opcional — para reativar uma regra desativada
+    category_id: 42,                  // opcional
+    rule_match_type: "starts_with",   // opcional — nova match style (exact/starts_with/contains/regex)
+    priority: 100,                    // opcional
+    is_active: true                   // opcional — para reativar uma regra desativada
   },
   confidence: 85,
   reasoning: "Regra atual aponta para 'Transporte' mas histórico de 2026-02/03 mostra 8 transações categorizadas como 'Marketing'. Corrigindo."
 })
 ```
+
+**Mapeamento rule_type → suggestable_type:**
+- `rule_type: "categorization"` → `suggestable_type: "rule_categorization"` (regras de `CategoryLearningRule`)
+- `rule_type: "provider"` → `suggestable_type: "rule_provider"` (regras de `ProviderLinkingRule`)
+- `rule_type: "competence"` → `suggestable_type: "rule_competence"` (regras de `CompetenceDateRule`)
+
+O servidor rejeita a sugestão se `suggestable_type`/`suggestable_id` não casarem com `action_params.rule_type`/`rule_id`. Para `create_categorization_rule` / `create_provider_linking_rule` / `create_competence_rule` (criação de regra nova), continua usando `suggestable_type: "transaction"` apontando para uma transação representativa do padrão — a restrição de morph só vale para `update_rule`/`delete_rule`.
 
 **Atenção — semântica de `delete_rule`:** é **soft-delete** (marca `is_active=false`, mantém histórico). Para reativar, chame `update_rule` passando `is_active: true`. O gestor nunca perde a regra — só para de aplicá-la.
 

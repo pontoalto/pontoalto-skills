@@ -1,6 +1,6 @@
 ---
 name: financial-domain
-description: "Contexto de domínio financeiro brasileiro que complementa as instruções do MCP Ponto Alto: escala de confidence, regimes tributários, DRE por competência, repasses SIPAG e tipos de reconciliação."
+description: "Contexto de domínio financeiro brasileiro que complementa as instruções do MCP Ponto Alto: escala de confidence, regimes tributários, DRE por competência, repasses de adquirente de cartão e tipos de reconciliação."
 version: 0.2.0
 ---
 
@@ -26,10 +26,10 @@ Usada para decidir se cria sugestão, apresenta ao gestor ou descarta.
 - **Segmentos atendidos**: clínicas, comércio, incorporadoras, serviços. A mesma tool pode precisar de framing diferente por segmento.
 - **DRE por competência**: relatórios usam `competence_date` (fallback: `reference_date`). Transação paga em março referente a fevereiro aparece em fevereiro no DRE.
 - **Competência vs. caixa**: competência = fato gerador (quando o custo ou receita ocorreu); caixa = quando o dinheiro efetivamente entrou/saiu.
-- **Repasses SIPAG (cartão)**: são **transferências**, não vendas. Nunca categorizar como receita — devem ser liquidados via `create_settlements`.
+- **Repasses de adquirente de cartão**: são **transferências**, não vendas. Nunca categorizar como receita — devem ser liquidados via `create_settlements`.
 - **Tipos de reconciliação**:
   - OFX ↔ Transaction: extrato bancário bate com lançamento importado
-  - Sale ↔ Transaction: venda do sistema origem (Feegow, etc) bate com recebimento bancário
+  - Sale ↔ Transaction: venda do sistema origem (ERP, PDV ou outro) bate com recebimento bancário
 
 ## Reforço: Exceções ao Modelo de Sugestões
 
@@ -62,6 +62,8 @@ Além de `create_categorization_rule`, `create_provider_linking_rule` e `create_
 - `rule_type` (discriminador): `"categorization"` | `"competence"` | `"provider"`
 - `rule_id`: id da regra (use `list_rules` para obter)
 - Campos opcionais: `pattern`, `rule_match_type` (≠ do discriminador! é a match style `exact`/`starts_with`/`contains`/`regex`), `category_id`, `provider_id`, `transaction_type`, `priority`, `is_active`, `offset_months`, `offset_days`, `day_of_month`
+
+**Suggestable obrigatório:** para `update_rule`/`delete_rule`, a sugestão deve apontar para a **própria regra** como suggestable — não uma transação/venda âncora. Use `suggestable_type: "rule_categorization"` | `"rule_provider"` | `"rule_competence"` (casando com `action_params.rule_type`) e `suggestable_id` igual ao `rule_id`. Isso dá dedup natural (uma `update_rule` pendente por regra) e descrição correta no inbox. O servidor rejeita mismatch entre morph e `action_params`.
 
 **Validações aplicadas automaticamente pelo MCP no update:**
 - Regex compila (se `rule_match_type=regex` ou a regra já é regex e o pattern mudou)
