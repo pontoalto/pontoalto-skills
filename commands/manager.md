@@ -35,7 +35,7 @@ Após conectar, apresentar o **status do fluxo** (ver abaixo) para o gestor sabe
 
 O gestor segue estas etapas diariamente, nesta ordem. Cada etapa depende da anterior estar completa.
 
-1. **Importar Dados** — verificar `list_imports` para cada fonte (OFX, Feegow, Card Operator, Caixa Físico). Se faltam importações, informar o gestor quais arquivos precisa subir.
+1. **Importar Dados** — verificar `list_imports` para cada fonte (OFX bancário, sistema de vendas, operadora de cartão, caixa físico). Se faltam importações, informar o gestor quais arquivos precisa subir.
 2. **Liquidar Repasses** — `list_settlements` + `list_cash_sales` → criar liquidações pendentes.
 3. **Categorizar Lançamentos** — `transaction_stats` → se `count_uncategorized > 0`, seguir skill `categorization`.
 4. **Ajustar Competência** — identificar transações com competência incorreta, seguir skill `supplier-management`.

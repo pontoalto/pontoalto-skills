@@ -54,7 +54,7 @@ Os commands dependem dos MCP servers do PontoAlto:
 
 As instruções dos MCP servers (convenções de R$, datas, modelo de escrita via sugestões, actions disponíveis) vêm diretamente do próprio servidor. As skills do plugin complementam com o que o MCP não fornece:
 
-- `financial-domain` — escala de confidence, contexto financeiro brasileiro (regimes, DRE, SIPAG), exceções ao modelo de sugestões
+- `financial-domain` — escala de confidence, contexto financeiro brasileiro (regimes, DRE, adquirente de cartão), exceções ao modelo de sugestões
 - `categorization` — fluxos específicos de categorização (automático, consulta WhatsApp, manual)
 - `reconciliation` — liquidações e conciliação detalhada
 - `supplier-management` — fornecedores e competência

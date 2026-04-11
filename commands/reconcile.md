@@ -5,7 +5,7 @@ argument-hint: "[--local] [contexto livre]"
 
 # Ponto Alto — Liquidações e Conciliação
 
-Atalho para as etapas de liquidação e conciliação de vendas. Use para recebimentos de cartão, vendas em dinheiro e para casar vendas do sistema origem (Feegow, etc.) com entradas no extrato.
+Atalho para as etapas de liquidação e conciliação de vendas. Use para recebimentos de cartão, vendas em dinheiro e para casar vendas do sistema origem (ERP, PDV ou outro) com entradas no extrato.
 
 Responda em português. Use a skill `reconciliation` para o fluxo detalhado e `financial-domain` para o contexto de domínio.
 
@@ -60,5 +60,5 @@ Reportar ao final:
 
 - Liquidações de cartão/dinheiro são **escrita direta**, não criam sugestão
 - Conciliação de vendas passa por sugestão (`reconcile_sale`)
-- Nunca categorizar repasse SIPAG como receita — é transferência
+- Nunca categorizar repasse de adquirente de cartão como receita — é transferência
 - Priorizar por valor (maiores primeiro)

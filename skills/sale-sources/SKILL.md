@@ -6,7 +6,7 @@ version: 0.4.0
 
 # Ponto Alto — Fontes de Venda Customizadas
 
-O Ponto Alto importa vendas de múltiplas origens (Feegow, Yzidro, caixa físico, operadoras de cartão). Quando o gestor tem um CSV de um sistema que **ainda não está integrado**, ele pode criar uma **Fonte de Venda customizada**: uma definição declarativa (spec JSON) que ensina o importador a interpretar aquele layout específico — sem alterar o código do PontoAlto.
+O Ponto Alto importa vendas de múltiplas origens (ERPs verticais, sistemas de PDV, caixa físico, operadoras de cartão). Quando o gestor tem um CSV de um sistema que **ainda não está integrado**, ele pode criar uma **Fonte de Venda customizada**: uma definição declarativa (spec JSON) que ensina o importador a interpretar aquele layout específico — sem alterar o código do PontoAlto.
 
 Esta skill é a **fonte única da verdade** do fluxo de ponta a ponta para quem monta fontes conversando com o Claude via MCP. O comando `/sale-source` é um atalho enxuto que delega aqui.
 
@@ -27,7 +27,7 @@ Todas no prefixo do servidor escolhido (`mcp__claude_ai_Ponto_Alto__` ou `mcp__p
 | `list_sale_source_definitions` | leitura | Ver o que já existe (com `last_used_at` e `sale_imports_count`) |
 | `get_sale_source_definition` | leitura | Inspecionar uma spec existente (key ou id) |
 | `get_sale_source_dsl_reference` | leitura | **Referência canônica do DSL.** Aceita `section=core` (default — resolvers, parsers, modifiers, operadores, row_filters, enums, ui_columns_reference), `section=recipes` (recipes + workflow), `section=full` (tudo). **Comece sempre por `core`** — é o suficiente para escrever a spec e é substancialmente menor |
-| `get_sale_source_spec_template` | leitura | Template inicial. Estilos em ordem de complexidade: `minimal` (skeleton) → `basic_1to1` (1 linha = 1 venda) → `grouped` (N linhas = 1 venda) → `feegow_like` (seed Feegow real) → `yzidro_like` (seed Yzidro real) |
+| `get_sale_source_spec_template` | leitura | Template inicial. Estilos em ordem de complexidade: `minimal` (skeleton) → `basic_1to1` (1 linha = 1 venda) → `grouped` (N linhas = 1 venda) → `feegow_like` (perfil clínica, nome herdado do enum da API) → `yzidro_like` (perfil varejo, nome herdado do enum da API) |
 | `preview_sale_source_definition` | leitura | Testa a spec contra um CSV amostra **sem persistir nada**. Retorna `items`, `sales`, `mapping_table`, `skipped_rows`, `errors`, `header_suggestions`, `unmapped_csv_columns`, `dedup_stats`. Aceita `sample_mode`: `head` (default, primeiras N linhas), `stratified` (amostra balanceada início/meio/fim), `full` (até 500 linhas, para validação final) |
 | `save_sale_source_definition` | **escrita direta** | Cria ou atualiza (upsert por `key`). Não passa pela inbox |
 | `delete_sale_source_definition` | **escrita direta** | Remove a fonte. Falha se houver importações vinculadas |
@@ -81,8 +81,8 @@ Escolha o template mais próximo do CSV do gestor. Escada de complexidade:
 - **`minimal`** — esqueleto vazio com placeholders `REPLACE_*`. Use só se nenhum outro encaixa.
 - **`basic_1to1`** — 1 linha do CSV = 1 venda completa, sem agrupamento. Ideal para exports flat: e-commerce simples, Stripe/Asaas line items, planilhas de vendas em que cada linha já tem cliente + produto + valor.
 - **`grouped`** — N linhas colapsam em 1 venda via coluna "Pedido/Ordem". Ideal para PDV/ERP que emite uma linha por item dentro de um mesmo pedido.
-- **`feegow_like`** — baseado no seed Feegow real (clínica): filtro de unidade via Setting, detecção de cancelamento multi-campo, inferência de categoria, grouping por paciente+data.
-- **`yzidro_like`** — baseado no seed Yzidro real (varejo): parse de data BR, grouping por pedido, concat descrição+código, quantidade com abs+cast.
+- **`feegow_like`** — perfil de clínica (nome é enum fixo da API): filtro de unidade via Setting, detecção de cancelamento multi-campo, inferência de categoria, grouping por paciente+data.
+- **`yzidro_like`** — perfil de varejo (nome é enum fixo da API): parse de data BR, grouping por pedido, concat descrição+código, quantidade com abs+cast.
 
 Cada template vem com `description` e `next_steps` explicando o que substituir. Os placeholders (`REPLACE_*`) precisam ser trocados pelos headers reais do CSV do gestor.
 
@@ -233,6 +233,6 @@ Essa tool lê o activity log e restaura a spec imediatamente anterior. Só rever
 
 ## Quando não usar esta skill
 
-- Importar um CSV de fonte **já integrada** (Feegow, Yzidro, SIPAG, caixa): usar o fluxo normal de importação.
+- Importar um CSV de fonte **já integrada** (ERP conhecido, adquirente de cartão, caixa): usar o fluxo normal de importação.
 - Consertar categorização ou reconciliação de vendas já importadas: ver skills `categorization` e `reconciliation`.
 - Alterar mapeamento de **uma única importação específica**: não dá — o mapeamento é por fonte, não por import. Corrigir a fonte e reimportar.

@@ -14,7 +14,7 @@ Após importar, criar os lançamentos de liquidação:
 
 ## Conciliar Vendas
 
-Vendas do sistema (Feegow/outro) precisam ser conciliadas com transações bancárias para confirmar recebimento.
+Vendas do sistema origem (ERP, PDV ou outro) precisam ser conciliadas com transações bancárias para confirmar recebimento.
 
 **Como verificar:** `list_sales(status=unreconciled)` + `list_sales(status=partially_reconciled)` → vendas sem match.
 
@@ -28,7 +28,7 @@ Vendas do sistema (Feegow/outro) precisam ser conciliadas com transações banc�
 
 Se o tenant tem mais de uma conta bancária, rode `list_bank_accounts` no diagnóstico inicial. É importante para:
 
-- Saber em qual conta cair o recebimento esperado (Feegow PIX pode chegar na conta A, boleto em B)
+- Saber em qual conta cair o recebimento esperado (PIX pode chegar na conta A, boleto em B)
 - Interpretar por que um match falhou — venda bate em valor mas a transação candidata está em outra conta
 - Filtrar `list_sales`/`list_transactions` por `bank_account_id` quando o volume de ambas as contas polui o scoring
 
