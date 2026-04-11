@@ -20,8 +20,9 @@ Transações importadas chegam sem categoria. O gestor precisa categorizar todas
 
 1. **Uma sugestão por grupo** — transações do mesmo destinatário/pattern vão em UMA sugestão com `transaction_ids: [id1, id2, ...]`
 2. **Sempre criar regra junto** — ao categorizar, incluir `create_rule` (`rule_type: "contains"`). Exceções:
-   - **Duplicata**: `list_rules` já contém regra com mesmo pattern e categoria
-   - **Ambíguo**: pattern já existe em regra de OUTRA categoria (verificar via `list_rules(search=pattern)`). Neste caso: categorizar sem regra, informar o gestor
+   - **Duplicata exata**: `list_rules` já contém regra com mesmo pattern **e** mesma categoria — não cria.
+   - **Conflito resolvível**: pattern já existe em regra de OUTRA categoria, **mas o histórico recente mostra que a categoria correta agora é a nova**. Propor `update_rule` na regra antiga (mudando `category_id`) ou `delete_rule` (soft-delete, marca `is_active=false`) via `create_suggestion` — o gestor aprova pela inbox. Ver § Atualizar/Desativar Regras abaixo.
+   - **Ambíguo não resolvível**: pattern casa múltiplas categorias no histórico sem padrão claro. Categorizar sem regra e avisar o gestor.
 3. **Verificar duplicatas** — `list_suggestions(status=pending)` antes de criar, para não duplicar
 
 ## Fluxo automático (analyze_uncategorized)
@@ -80,3 +81,42 @@ Quando o gestor responde com a categoria (ex: via WhatsApp):
 3. `create_suggestion` modo batch — cada item com `transaction_ids: [...]` agrupados
 4. Sempre incluir sugestão `create_rule` junto com a categorização, exceto se o pattern é ambíguo (aparece em categorias diferentes no histórico)
 5. Reportar: total por categoria + patterns ambíguos onde regra NÃO foi criada
+
+## Atualizar/Desativar Regras (update_rule / delete_rule)
+
+Quando `list_rules` mostrar uma regra que **não deveria mais estar criando efeito** — categoria errada detectada pelo histórico recente, fornecedor encerrado, pattern obsoleto — propor a correção via sugestão. Não ignora nem cria regra nova por cima.
+
+**Quando propor `update_rule`:**
+- Regra existente com **categoria errada** e o histórico de transações dos últimos 60 dias aponta consistentemente para outra categoria — propor mudança de `category_id`.
+- Regra com prioridade baixa demais sendo suplantada por outra — propor `priority` maior.
+- Regra regex quebrada — propor `pattern` corrigido.
+
+**Quando propor `delete_rule`:**
+- Regra ativa que **não casou nenhuma transação** no período analisado E o fornecedor/pattern deixou de aparecer nos extratos (fornecedor encerrado, conta trocada).
+- Regra duplicada por acidente (mesmo pattern em categorias diferentes) — desativar a errada, manter a certa.
+
+**Como propor (via inbox, como qualquer outra ação):**
+
+```
+create_suggestion({
+  type: "general",
+  suggestable_type: "transaction",   // ou "sale" — qualquer record do tenant como âncora
+  suggestable_id: <id>,
+  action: "update_rule",             // ou "delete_rule"
+  action_params: {
+    rule_type: "categorization",     // discriminador: categorization | competence | provider
+    rule_id: <id_da_regra>,
+    // Apenas os campos a alterar:
+    category_id: 42,                 // opcional
+    rule_match_type: "starts_with",  // opcional — nova match style (exact/starts_with/contains/regex)
+    priority: 100,                   // opcional
+    is_active: true                  // opcional — para reativar uma regra desativada
+  },
+  confidence: 85,
+  reasoning: "Regra atual aponta para 'Transporte' mas histórico de 2026-02/03 mostra 8 transações categorizadas como 'Marketing'. Corrigindo."
+})
+```
+
+**Atenção — semântica de `delete_rule`:** é **soft-delete** (marca `is_active=false`, mantém histórico). Para reativar, chame `update_rule` passando `is_active: true`. O gestor nunca perde a regra — só para de aplicá-la.
+
+**Antes de propor:** rode `list_rules(search=<pattern>)` para inspecionar a regra atual e confirmar que você não está pedindo ao gestor uma mudança sem base. O reasoning deve citar **dados concretos** (ex: "8 transações em 2026-03 / pattern parou de casar desde 2026-01").

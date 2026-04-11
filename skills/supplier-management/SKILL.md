@@ -27,3 +27,16 @@ Transações de despesa precisam estar vinculadas ao fornecedor correto para an�
 1. Para matches com fornecedor existente: criar sugestões `link_provider`
 2. Para empresas sem fornecedor cadastrado: sugerir `create_provider` + `link_provider`
 3. Se há padrões recorrentes: sugerir `create_provider_linking_rule`
+
+## Atualizar/Desativar Regras
+
+Mesmo princípio da skill `categorization` § Atualizar/Desativar Regras: quando `list_rules(type=provider)` ou `list_rules(type=competence)` mostrar uma regra obsoleta ou errada, propor `update_rule`/`delete_rule` via `create_suggestion` em vez de ignorar.
+
+**Casos típicos:**
+- Fornecedor renomeado ou fundido com outro → `update_rule` mudando `provider_id`
+- Regra de vinculação casando com transações de outro fornecedor → `update_rule` (pattern/rule_match_type) ou `delete_rule`
+- Regra de competência de contrato encerrado → `delete_rule`
+
+**action_params** usam os mesmos campos que `categorization`, trocando apenas o discriminador: `rule_type: "provider"` ou `rule_type: "competence"`. Ver exemplo completo na skill `categorization`.
+
+**`delete_rule` é soft-delete** (marca `is_active=false`). Para reativar, `update_rule` com `is_active: true`.

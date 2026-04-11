@@ -40,6 +40,26 @@ O MCP deixa claro que escrita passa por sugestões. **Duas exceções** gravam d
 
 Nas demais operações: sempre via `create_suggestion` / `bulk_create_suggestions` → aprovação → `confirm_approval(token)`.
 
+## Manutenção de Regras (update_rule / delete_rule)
+
+Além de `create_categorization_rule`, `create_provider_linking_rule` e `create_competence_rule`, o MCP expõe duas actions para **manter** regras existentes:
+
+- **`update_rule`** — altera pattern, match style, categoria, fornecedor, prioridade, scope (`transaction_type`), ou status (`is_active`). Uso principal: corrigir regras antigas quando o histórico recente mostra padrão diferente.
+- **`delete_rule`** — **soft-delete**: marca `is_active=false` e mantém histórico. Para reativar, chamar `update_rule` com `is_active: true`. Nunca há perda permanente de regra via MCP.
+
+**Payload compartilhado:**
+- `rule_type` (discriminador): `"categorization"` | `"competence"` | `"provider"`
+- `rule_id`: id da regra (use `list_rules` para obter)
+- Campos opcionais: `pattern`, `rule_match_type` (≠ do discriminador! é a match style `exact`/`starts_with`/`contains`/`regex`), `category_id`, `provider_id`, `transaction_type`, `priority`, `is_active`, `offset_months`, `offset_days`, `day_of_month`
+
+**Validações aplicadas automaticamente pelo MCP no update:**
+- Regex compila (se `rule_match_type=regex` ou a regra já é regex e o pattern mudou)
+- Duplicata: rejeita se pattern+match+scope bate com outra regra do mesmo tipo (self-exclusion)
+- Compatibilidade de categoria: `transaction_type=debit` exige `category.type ∈ {expense, both}`; `credit` exige `{revenue, both}`
+- Categoria ativa: rejeita categoria com `is_active=false`
+
+Ambas seguem o fluxo padrão de sugestões (inbox → `approve_suggestion` → `confirm_approval`). Quando propor cada uma e como embasar o reasoning está detalhado nas skills `categorization` § Atualizar/Desativar Regras e `supplier-management` § Atualizar/Desativar Regras.
+
 ## Erro em tool MCP
 
 Logar o erro e seguir para o próximo item do fluxo. Não bloquear o workflow inteiro por uma tool que falhou em uma transação ou grupo.

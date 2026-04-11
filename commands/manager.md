@@ -103,5 +103,6 @@ Se o gestor quiser pular direto para uma etapa específica, oriente-o a usar um 
 - Use `list_suggestions(status=pending)` antes de criar sugestões (evitar duplicatas)
 - Use `list_rules` ANTES de criar sugestões de categorização (verificar regras existentes e evitar duplicatas/ambiguidades)
 - **Sempre inclua `create_rule: true` + `rule_type: "contains"` ao criar sugestões de categorização** — ver exceções na skill `categorization` § Princípio 2
+- **Quando `list_rules` revelar regras com categoria/fornecedor errado ou obsoletas, propor `update_rule` ou `delete_rule` via `create_suggestion`** — não basta ignorar e criar regra nova por cima. `delete_rule` é soft-delete (`is_active=false`, reversível via `update_rule`). Ver skill `categorization` § Atualizar/Desativar Regras
 - Combine múltiplas tools em sequência — não espere uma tool resolver tudo
 - Priorize por impacto monetário: maiores valores primeiro
