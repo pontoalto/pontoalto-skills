@@ -31,7 +31,7 @@ Siga o fluxo completo descrito em `sale-sources/SKILL.md`. Ele cobre:
 - Dimensionamento via `list_sale_source_definitions` (com `last_used_at` e `sale_imports_count` para decidir entre editar vs. criar).
 - Coleta de amostra do CSV, nome, key e separador.
 - Carregamento do DSL via `get_sale_source_dsl_reference` (default `section=core` — compacto; passe `section=recipes` quando precisar de exemplos prontos).
-- Escolha do template via `get_sale_source_spec_template` (estilos `minimal`, `basic_1to1`, `grouped`, `feegow_like`, `yzidro_like`).
+- Escolha do template via `get_sale_source_spec_template` (estilos `minimal`, `basic_1to1`, `grouped`). Para perfis mais ricos, use `get_sale_source_definition` em uma fonte já cadastrada como ponto de partida.
 - Loop de preview via `preview_sale_source_definition` analisando `mapping_table` (com `severity`), `header_suggestions`, `skipped_rows`, `errors` estruturados, `dedup_stats` e `unmapped_csv_columns`.
 - Confirmação dupla + `save_sale_source_definition`.
 - Safety net: `revert_sale_source_definition` restaura a versão anterior se algo deu errado.
