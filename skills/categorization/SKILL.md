@@ -77,10 +77,15 @@ Faltam estes pra fechar [mês]. Me diga a que se refere:
 Quando o gestor responde com a categoria (ex: via WhatsApp):
 
 1. `list_rules` + `list_suggestions(status=pending)` → preparar contexto
-2. Agrupar por destinatário/pattern
-3. `create_suggestion` modo batch — cada item com `transaction_ids: [...]` agrupados
-4. Sempre incluir sugestão `create_rule` junto com a categorização, exceto se o pattern é ambíguo (aparece em categorias diferentes no histórico)
-5. Reportar: total por categoria + patterns ambíguos onde regra NÃO foi criada
+2. `list_categories` → **obter `category_id` a partir do nome** que o gestor forneceu. O gestor fala por nome ("Marketing", "Aluguel"), mas a action exige ID. Faça match case-insensitive e, se ambíguo (ex: "Aluguel" vs "Aluguel Equipamentos"), confirme via `AskUserQuestion` antes de criar a sugestão
+3. Agrupar por destinatário/pattern
+4. `create_suggestion` modo batch — cada item com `transaction_ids: [...]` agrupados
+5. Sempre incluir sugestão `create_rule` junto com a categorização, exceto se o pattern é ambíguo (aparece em categorias diferentes no histórico)
+6. Reportar: total por categoria + patterns ambíguos onde regra NÃO foi criada
+
+## Drill-down em transação individual (`get_transaction`)
+
+Quando uma transação está difícil de categorizar mesmo depois de `suggest_category` e `analyze_uncategorized`, use `get_transaction(id)` para inspecionar o payload completo: `raw_description` (muitas vezes mais informativo que `description`), metadata do OFX, histórico de enriquecimento PIX (nome completo + CPF mascarado do pagador), tentativas anteriores de regra e `label` atual. É a tool certa para casos isolados — não use para listar em massa (use `list_transactions`).
 
 ## Atualizar/Desativar Regras (update_rule / delete_rule)
 

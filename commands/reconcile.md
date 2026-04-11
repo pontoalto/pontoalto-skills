@@ -25,6 +25,7 @@ Argumento recebido: `$ARGUMENTS`
 ## Diagnóstico (sempre executar primeiro)
 
 ```
+list_bank_accounts                       → (só se o tenant for multi-conta) mapa das contas disponíveis
 list_settlements(status=pending)         → repasses de cartão pendentes
 list_cash_sales(unreconciled=true)       → vendas em dinheiro pendentes
 list_sales(status=unreconciled)          → vendas sem conciliação

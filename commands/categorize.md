@@ -40,7 +40,7 @@ Apresentar ao gestor via `AskUserQuestion` (3 opções):
 
 1. **Automático (Recomendado)** — `analyze_uncategorized` + `suggest_category` + `bulk_create_suggestions` com `create_rule: true` em todos os grupos
 2. **Consulta WhatsApp** — listar transações em texto plano pronto para copiar/colar (pagamentos PIX para pessoas físicas, despesas sem pattern claro)
-3. **Manual guiado** — gestor dita a categoria de cada grupo, Claude cria as sugestões via `create_suggestion` modo batch
+3. **Manual guiado** — gestor dita a categoria de cada grupo, Claude cria as sugestões via `create_suggestion` modo batch (rodar `list_categories` primeiro para mapear nome → `category_id`)
 
 Executar o fluxo escolhido conforme a skill `categorization`. Ao final, reportar:
 - Total categorizado por categoria

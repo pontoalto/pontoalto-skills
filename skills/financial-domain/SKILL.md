@@ -38,7 +38,18 @@ O MCP deixa claro que escrita passa por sugestões. **Duas exceções** gravam d
 - `create_settlements` — liquida repasses de cartão em lote
 - `create_cash_settlements` — cria recebíveis de vendas em dinheiro
 
-Nas demais operações: sempre via `create_suggestion` / `bulk_create_suggestions` → aprovação → `confirm_approval(token)`.
+Nas demais operações: sempre via `create_suggestion` / `bulk_create_suggestions`. **A aprovação acontece manualmente pela UI do PontoAlto** — o plugin cria sugestões e para aí. Não chame `approve_suggestion`, `bulk_approve_suggestions` nem `confirm_approval` no CLI; o gestor revisa e aprova pela inbox visual.
+
+## Higiene de Inbox (reject / delete)
+
+Antes de rodar um sweep grande (categorização, fornecedores, conciliação), verifique o estado da inbox com `list_suggestions(status=pending)`. Duas ferramentas para limpar pendentes obsoletos:
+
+- **`reject_suggestion(id)`** — marca uma sugestão como rejeitada mantendo histórico. Use quando a sugestão **foi analisada e está errada** (ex: match de fornecedor que o gestor confirmou como incorreto). O registro fica na inbox com `status=rejected` e serve de sinal para não recriar o mesmo pattern.
+- **`delete_suggestions(ids=[...])`** ou **`delete_suggestions(all_pending=true)`** — remove fisicamente da inbox. Use para **limpeza em massa** de sugestões obsoletas (ex: sweep anterior criou 80 sugestões de uma área e o gestor pediu para refazer do zero).
+
+**Regra prática:** se a sugestão estava certa mas virou obsoleta por novo sweep → `delete_suggestions`. Se estava errada e o gestor quer histórico do erro → `reject_suggestion`. Nunca delete sugestões `status=accepted` — isso apaga rastro de ações executadas.
+
+**Quando aplicar:** sempre rode `list_suggestions(status=pending)` no diagnóstico inicial de qualquer command. Se o total de pendentes for alto (> 50) e você está prestes a criar mais em massa, ofereça ao gestor via `AskUserQuestion` limpar as antigas antes (deletar `all_pending` da área específica) ou acumular.
 
 ## Manutenção de Regras (update_rule / delete_rule)
 
