@@ -50,7 +50,7 @@ Apresentar via `AskUserQuestion`:
 
 ## Ajustar Competência — Detalhe
 
-1. `list_transactions` filtrando por padrões recorrentes (aluguel, condomínio, seguros, parcelas de empréstimo)
+1. `list_transactions` filtrando por padrões recorrentes (aluguel, condomínio, seguros, parcelas de empréstimo). Use `amount_min` para focar em lançamentos de maior impacto e `exclude_internal_transfers=true` para remover ruído de transferências entre contas.
 2. Identificar transações onde `competence_date` está ausente ou diferente do mês de competência real
 3. Criar sugestões `set_competence_date` agrupadas por pattern (`transaction_ids: [...]`)
 4. Para recorrências confirmadas, sugerir `create_competence_rule`
