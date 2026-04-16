@@ -7,7 +7,7 @@ argument-hint: "[--local] [contexto livre]"
 
 Atalho para as etapas de fornecedores e competência. Use quando há despesas sem fornecedor vinculado ou lançamentos com competência incorreta afetando o DRE.
 
-Responda em português. Use a skill `supplier-management` para o fluxo detalhado e `financial-domain` para o contexto de domínio.
+Responda em português. Use a skill `provider-management` para o fluxo detalhado e `financial-domain` para o contexto de domínio.
 
 ## MCP Server
 
@@ -25,7 +25,7 @@ Argumento recebido: `$ARGUMENTS`
 ## Diagnóstico
 
 ```
-analyze_supplier_payments(mês atual) → pagamentos agrupados por empresa/pessoa
+analyze_provider_payments(mês atual) → pagamentos agrupados por empresa/pessoa
 list_providers                       → fornecedores já cadastrados
 list_suggestions(status=pending)     → sugestões pendentes (não duplicar)
 list_rules                           → regras de vinculação e competência existentes
@@ -37,13 +37,13 @@ Resumir: grupos sem fornecedor + grupos com match sugerido + transações com co
 
 Apresentar via `AskUserQuestion`:
 
-1. **Vincular fornecedores (Recomendado)** — ação rápida, matches de `analyze_supplier_payments`
+1. **Vincular fornecedores (Recomendado)** — ação rápida, matches de `analyze_provider_payments`
 2. **Ajustar competência** — focar em lançamentos recorrentes (aluguel, seguros, parcelas)
 3. **Ambos em sequência** — fornecedores primeiro, depois competência
 
 ## Vincular Fornecedores — Detalhe
 
-1. `analyze_supplier_payments` → grupos com/sem match
+1. `analyze_provider_payments` → grupos com/sem match
 2. **Match com fornecedor existente (confidence ≥ 85)** — criar sugestões `link_provider` em lote via `bulk_create_suggestions` com `create_rule: true` (tipo `contains`)
 3. **Empresa sem fornecedor cadastrado** — sugerir `create_provider` + `link_provider` no mesmo lote
 4. **Padrão recorrente confirmado** — incluir sugestão `create_provider_linking_rule` para automatizar próximos meses

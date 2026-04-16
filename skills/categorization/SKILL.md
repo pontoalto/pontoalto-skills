@@ -12,7 +12,7 @@ Transações importadas chegam sem categoria. O gestor precisa categorizar todas
 
 **OBRIGATÓRIO — Formato WhatsApp:** quando listar transações para o gestor consultar a equipe, use **texto simples** — formato `N. DD/MM — Nome — R$ Valor`, sem tabelas markdown, pipes (`|`) ou negrito. Ver § Fluxo consulta.
 
-**OBRIGATÓRIO — Regras de categorização:** ao criar sugestões via `bulk_create_suggestions`, SEMPRE incluir `create_rule: true` e `rule_type: "contains"` em cada grupo/supplier_group. Exceções (ver Princípio 2 abaixo): pattern já existe como regra (`list_rules`) ou pattern é ambíguo (usado em categorias diferentes).
+**OBRIGATÓRIO — Regras de categorização:** ao criar sugestões via `bulk_create_suggestions`, SEMPRE incluir `create_rule: true` e `rule_type: "contains"` em cada grupo/provider_group. Exceções (ver Princípio 2 abaixo): pattern já existe como regra (`list_rules`) ou pattern é ambíguo (usado em categorias diferentes).
 
 **Se o gestor não responder:** marcar etapa como "aguardando resposta" e avançar para a próxima etapa. Retomar quando o gestor fornecer as respostas.
 

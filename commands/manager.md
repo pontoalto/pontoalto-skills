@@ -38,8 +38,8 @@ O gestor segue estas etapas diariamente, nesta ordem. Cada etapa depende da ante
 1. **Importar Dados** — verificar `list_imports` para cada fonte (OFX bancário, sistema de vendas, operadora de cartão, caixa físico). Se faltam importações, informar o gestor quais arquivos precisa subir.
 2. **Liquidar Repasses** — `list_settlements` + `list_cash_sales` → criar liquidações pendentes.
 3. **Categorizar Lançamentos** — `transaction_stats` → se `count_uncategorized > 0`, seguir skill `categorization`.
-4. **Ajustar Competência** — identificar transações com competência incorreta, seguir skill `supplier-management`.
-5. **Vincular Fornecedores** — `analyze_supplier_payments` → vincular, seguir skill `supplier-management`.
+4. **Ajustar Competência** — identificar transações com competência incorreta, seguir skill `provider-management`.
+5. **Vincular Fornecedores** — `analyze_provider_payments` → vincular, seguir skill `provider-management`.
 6. **Conciliar Vendas** — `list_sales(status=unreconciled)` → encontrar matches, seguir skill `reconciliation`.
 7. **Custos de Serviços** — `get_cost_analysis(view=by_service)` → verificar serviços sem custo, seguir skill `reconciliation`.
 
@@ -53,7 +53,7 @@ get_workflow_status(tenant_id, period=mês atual) → status consolidado das 7 e
 
 Essa tool retorna, em um único payload, o status (`ok` / `warning`) de cada etapa (`imports`, `settlements`, `categorization`, `competence`, `providers`, `reconciliation`, `costs`) mais `total_credits` / `total_debits` / `balance`. Mapear diretamente para o checklist abaixo.
 
-> **Não** chamar `list_imports`, `transaction_stats`, `analyze_supplier_payments`, `list_sales(unreconciled)` ou `get_cost_analysis` no diagnóstico inicial — o `get_workflow_status` já cobre tudo. Só aprofunde nessas tools se o gestor pedir detalhe ou ao executar uma etapa específica.
+> **Não** chamar `list_imports`, `transaction_stats`, `analyze_provider_payments`, `list_sales(unreconciled)` ou `get_cost_analysis` no diagnóstico inicial — o `get_workflow_status` já cobre tudo. Só aprofunde nessas tools se o gestor pedir detalhe ou ao executar uma etapa específica.
 
 Apresentar como checklist:
 
@@ -91,7 +91,7 @@ Se o gestor quiser pular direto para uma etapa específica, oriente-o a usar um 
 
 - `/pontoalto:categorize` — só categorização (etapa 3)
 - `/pontoalto:reconcile` — liquidações + conciliação de vendas (etapas 2 e 6)
-- `/pontoalto:suppliers` — fornecedores + competência (etapas 4 e 5)
+- `/pontoalto:providers` — fornecedores + competência (etapas 4 e 5)
 - `/pontoalto:report` — relatório mensal consolidado (DRE, orçado vs realizado, custos)
 
 `/pontoalto:manager` é o fluxo completo — use quando for fechar o mês ou quando o gestor não souber por onde começar.

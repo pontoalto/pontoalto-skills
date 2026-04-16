@@ -12,7 +12,7 @@ pontoalto-skills/
 │   ├── manager.md         # /pontoalto:manager — fluxo completo
 │   ├── categorize.md      # /pontoalto:categorize — só categorização
 │   ├── reconcile.md       # /pontoalto:reconcile — liquidações + conciliação
-│   ├── suppliers.md       # /pontoalto:suppliers — fornecedores + competência
+│   ├── providers.md       # /pontoalto:providers — fornecedores + competência
 │   ├── report.md          # /pontoalto:report — relatório mensal
 │   └── sale-source.md     # /pontoalto:sale-source — fonte de venda customizada (DSL + preview loop)
 ├── skills/
@@ -22,7 +22,7 @@ pontoalto-skills/
 │   │   └── SKILL.md       # Fluxo automático, consulta e manual de categorização
 │   ├── reconciliation/
 │   │   └── SKILL.md       # Liquidações, conciliação de vendas, custos de serviços
-│   ├── supplier-management/
+│   ├── provider-management/
 │   │   └── SKILL.md       # Competência e vinculação de fornecedores
 │   └── sale-sources/
 │       └── SKILL.md       # DSL de fontes customizadas, preview iterativo, exceção à inbox
@@ -37,7 +37,7 @@ Namespaceados automaticamente pelo `name` do plugin (`pontoalto`):
 - `/pontoalto:manager [--local]` — fluxo completo do mês com checklist de status
 - `/pontoalto:categorize [--local]` — só categorização (automático, consulta WhatsApp ou manual)
 - `/pontoalto:reconcile [--local]` — liquidações (cartão/dinheiro) + conciliação de vendas
-- `/pontoalto:suppliers [--local]` — vinculação de fornecedores + ajuste de competência
+- `/pontoalto:providers [--local]` — vinculação de fornecedores + ajuste de competência
 - `/pontoalto:report [--local] [YYYY-MM]` — relatório mensal (DRE, orçado vs realizado, custos)
 - `/pontoalto:sale-source [--local] [nome|key]` — monta/ajusta fonte de venda customizada via DSL + preview iterativo (admin-only)
 
@@ -57,7 +57,7 @@ As instruções dos MCP servers (convenções de R$, datas, modelo de escrita vi
 - `financial-domain` — escala de confidence, contexto financeiro brasileiro (regimes, DRE, adquirente de cartão), exceções ao modelo de sugestões
 - `categorization` — fluxos específicos de categorização (automático, consulta WhatsApp, manual)
 - `reconciliation` — liquidações e conciliação detalhada
-- `supplier-management` — fornecedores e competência
+- `provider-management` — fornecedores e competência
 - `sale-sources` — DSL de fontes customizadas, loop de preview, exceção à inbox (escrita direta em `save_sale_source_definition` / `delete_sale_source_definition`)
 
 ## Desenvolvimento local

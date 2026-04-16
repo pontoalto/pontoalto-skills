@@ -20,7 +20,7 @@ Você continua no controle: toda operação de escrita passa por sugestões na i
 | `/pontoalto:manager`     | Fluxo completo do mês — quando estiver fechando ou não souber por onde começar. Mostra um checklist do status e executa a primeira pendência. |
 | `/pontoalto:categorize`  | Só categorizar lançamentos pendentes (automático, consulta WhatsApp ou manual). |
 | `/pontoalto:reconcile`   | Liquidar repasses de cartão/dinheiro e conciliar vendas com o extrato bancário. |
-| `/pontoalto:suppliers`   | Vincular fornecedores a pagamentos e ajustar datas de competência para o DRE. |
+| `/pontoalto:providers`   | Vincular fornecedores a pagamentos e ajustar datas de competência para o DRE. |
 | `/pontoalto:report`      | Gerar relatório mensal consolidado: DRE, orçado vs realizado e análise de custos. |
 | `/pontoalto:sale-source` | Montar ou ajustar uma fonte de venda customizada (CSV de sistema ainda não integrado), com loop de preview iterativo. |
 
@@ -79,7 +79,7 @@ O fluxo do PontoAlto é majoritariamente orquestração de tools MCP (listar, an
 
 | Modelo                  | Quando usar |
 |-------------------------|-------------|
-| `claude-sonnet-4-6`     | **Padrão recomendado.** Rápido e preciso para o dia a dia (`/pontoalto:manager`, `/categorize`, `/reconcile`, `/suppliers`). |
+| `claude-sonnet-4-6`     | **Padrão recomendado.** Rápido e preciso para o dia a dia (`/pontoalto:manager`, `/categorize`, `/reconcile`, `/providers`). |
 | `claude-haiku-4-5`      | Máxima velocidade em tarefas diretas (ex: `/pontoalto:report`, categorizações simples via regras). Pode perder nuance em análises mais abertas. |
 | `claude-opus-4-6`       | Reserve para raciocínio pesado: inconsistências complexas no fechamento, decisões de competência ambíguas ou análises de custo não triviais. |
 

@@ -1,6 +1,6 @@
 ---
-name: supplier-management
-description: "Ajuste de datas de competência e vinculação de fornecedores a transações no PontoAlto: analyze_supplier_payments, link_provider, create_provider, set_competence_date."
+name: provider-management
+description: "Ajuste de datas de competência e vinculação de fornecedores a transações no PontoAlto: analyze_provider_payments, link_provider, create_provider, set_competence_date."
 version: 0.2.0
 ---
 
@@ -21,18 +21,18 @@ A data de competência determina em qual mês o lançamento aparece no DRE. Muit
 
 Transações de despesa precisam estar vinculadas ao fornecedor correto para análise de custos.
 
-**Como verificar:** `analyze_supplier_payments` → mostra pagamentos agrupados por empresa/pessoa, com matches a fornecedores conhecidos.
+**Como verificar:** `analyze_provider_payments` → mostra pagamentos agrupados por empresa/pessoa, com matches a fornecedores conhecidos.
 
-**Drill-down raw:** quando o agrupamento do `analyze_supplier_payments` não bate com o esperado (grupos grandes demais, pattern fragmentado) ou quando precisa focar em valores altos: `list_transactions(type=debit, has_provider=false, amount_min=<valor>, date_from=..., date_to=...)` lista as despesas órfãs sem agrupar.
+**Drill-down raw:** quando o agrupamento do `analyze_provider_payments` não bate com o esperado (grupos grandes demais, pattern fragmentado) ou quando precisa focar em valores altos: `list_transactions(type=debit, has_provider=false, amount_min=<valor>, date_from=..., date_to=...)` lista as despesas órfãs sem agrupar.
 
 **Como agir:**
-1. Para matches com fornecedor existente: `bulk_create_suggestions` com `supplier_groups=[...]`. Cria automaticamente **cadeia** (regra de vinculação + link) para cada grupo com `create_rule: true` — o par aparece na inbox como card único e é aceito/rejeitado atomicamente.
+1. Para matches com fornecedor existente: `bulk_create_suggestions` com `provider_groups=[...]`. Cria automaticamente **cadeia** (regra de vinculação + link) para cada grupo com `create_rule: true` — o par aparece na inbox como card único e é aceito/rejeitado atomicamente.
 2. Para empresas sem fornecedor cadastrado: usar `create_suggestion_chain` encadeando `create_provider` → `create_provider_linking_rule` → `link_provider` (ver § Criar Fornecedor Novo em Cadeia abaixo).
 3. Se há padrões recorrentes com fornecedor existente: o `create_rule: true` do `bulk_create_suggestions` já resolve.
 
 ## Criar Fornecedor Novo em Cadeia
 
-Quando `analyze_supplier_payments` mostra um grupo de pagamentos sem fornecedor cadastrado, e você quer cadastrar + vincular + criar regra em uma operação atômica: use `create_suggestion_chain`.
+Quando `analyze_provider_payments` mostra um grupo de pagamentos sem fornecedor cadastrado, e você quer cadastrar + vincular + criar regra em uma operação atômica: use `create_suggestion_chain`.
 
 **Fluxo:**
 1. `list_providers` → confirmar que o fornecedor não existe (case-insensitive)

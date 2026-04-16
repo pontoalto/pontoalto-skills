@@ -46,7 +46,7 @@ Quando uma operação precisa de N passos onde o step seguinte depende do anteri
 
 **Duas formas de criar cadeias:**
 
-1. **Auto-chain (implícito) — `bulk_create_suggestions` com `create_rule: true`** — o par categorize+rule gerado para um mesmo grupo já nasce encadeado (`chain_id` compartilhado, rule executa antes da categorização). **Não precisa fazer nada diferente** — é o comportamento padrão do fluxo automático de categorização e de fornecedores (supplier_groups).
+1. **Auto-chain (implícito) — `bulk_create_suggestions` com `create_rule: true`** — o par categorize+rule gerado para um mesmo grupo já nasce encadeado (`chain_id` compartilhado, rule executa antes da categorização). **Não precisa fazer nada diferente** — é o comportamento padrão do fluxo automático de categorização e de fornecedores (provider_groups).
 
 2. **Explícito — `create_suggestion_chain(steps=[...])`** — use quando precisar encadear **criação de entidade nova** antes da regra/aplicação. Exemplos:
    - `create_category` (nova) → `create_categorization_rule` → `categorize_transaction`
@@ -137,7 +137,7 @@ Além de `create_categorization_rule`, `create_provider_linking_rule` e `create_
 - Compatibilidade de categoria: `transaction_type=debit` exige `category.type ∈ {expense, both}`; `credit` exige `{revenue, both}`
 - Categoria ativa: rejeita categoria com `is_active=false`
 
-Ambas seguem o fluxo padrão de sugestões (inbox → `approve_suggestion` → `confirm_approval`). Quando propor cada uma e como embasar o reasoning está detalhado nas skills `categorization` § Atualizar/Desativar Regras e `supplier-management` § Atualizar/Desativar Regras.
+Ambas seguem o fluxo padrão de sugestões (inbox → `approve_suggestion` → `confirm_approval`). Quando propor cada uma e como embasar o reasoning está detalhado nas skills `categorization` § Atualizar/Desativar Regras e `provider-management` § Atualizar/Desativar Regras.
 
 ## Erro em tool MCP
 

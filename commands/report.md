@@ -32,7 +32,7 @@ Antes de gerar o relatório, avisar o gestor se o mês **não está pronto** par
 get_workflow_status(tenant_id, period=YYYY-MM) → status de categorização, fornecedores, reconciliação, competência, custos
 ```
 
-Verificar os campos `categorization.status`, `providers.status`, `reconciliation.status`, `competence.status` e `costs.status`. Se algum estiver em `warning`, apresentar o impacto. Só aprofunde em `transaction_stats` / `analyze_supplier_payments` / `list_sales` se o gestor quiser detalhar as pendências.
+Verificar os campos `categorization.status`, `providers.status`, `reconciliation.status`, `competence.status` e `costs.status`. Se algum estiver em `warning`, apresentar o impacto. Só aprofunde em `transaction_stats` / `analyze_provider_payments` / `list_sales` se o gestor quiser detalhar as pendências.
 
 Se há pendências significativas, **apresentar o impacto** antes de gerar o relatório:
 
