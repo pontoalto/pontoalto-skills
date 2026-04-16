@@ -1,7 +1,7 @@
 ---
 name: financial-domain
 description: "Contexto de domínio financeiro brasileiro que complementa as instruções do MCP Ponto Alto: escala de confidence, regimes tributários, DRE por competência, repasses de adquirente de cartão e tipos de reconciliação."
-version: 0.2.0
+version: 0.3.0
 ---
 
 # Ponto Alto — Domínio Financeiro
@@ -38,7 +38,73 @@ O MCP deixa claro que escrita passa por sugestões. **Duas exceções** gravam d
 - `create_settlements` — liquida repasses de cartão em lote
 - `create_cash_settlements` — cria recebíveis de vendas em dinheiro
 
-Nas demais operações: sempre via `create_suggestion` / `bulk_create_suggestions`. **A aprovação acontece manualmente pela UI do PontoAlto** — o plugin cria sugestões e para aí. Não chame `approve_suggestion`, `bulk_approve_suggestions` nem `confirm_approval` no CLI; o gestor revisa e aprova pela inbox visual.
+Nas demais operações: sempre via `create_suggestion` / `bulk_create_suggestions` / `create_suggestion_chain`. **A aprovação acontece manualmente pela UI do PontoAlto** — o plugin cria sugestões e para aí. Não chame `approve_suggestion`, `bulk_approve_suggestions` nem `confirm_approval` no CLI; o gestor revisa e aprova pela inbox visual.
+
+## Encadeamento de Actions (Cadeias)
+
+Quando uma operação precisa de N passos onde o step seguinte depende do anterior (ex: criar categoria nova → criar regra usando a categoria → aplicar categoria nas transações), use uma **cadeia de sugestões**. A inbox apresenta a cadeia como **um único card agrupado** com timeline numerada e dois botões ("Aceitar Tudo" / "Rejeitar Tudo") — o gestor aprova ou rejeita a sequência inteira, e a execução é atômica (ou tudo acontece, ou nada).
+
+**Duas formas de criar cadeias:**
+
+1. **Auto-chain (implícito) — `bulk_create_suggestions` com `create_rule: true`** — o par categorize+rule gerado para um mesmo grupo já nasce encadeado (`chain_id` compartilhado, rule executa antes da categorização). **Não precisa fazer nada diferente** — é o comportamento padrão do fluxo automático de categorização e de fornecedores (supplier_groups).
+
+2. **Explícito — `create_suggestion_chain(steps=[...])`** — use quando precisar encadear **criação de entidade nova** antes da regra/aplicação. Exemplos:
+   - `create_category` (nova) → `create_categorization_rule` → `categorize_transaction`
+   - `create_provider` (novo) → `create_provider_linking_rule` → `link_provider`
+   - `create_categorization_rule` → `categorize_transaction` (quando categoria já existe mas é um caso específico que quer atomicidade)
+
+**Referenciando IDs entre steps:** dentro de `action_params`, substitua campos que dependem de um ID ainda não criado por `"$chain.N.created_id"`, onde N é o `chain_order` (0-based) do step que cria a entidade. O servidor resolve em runtime, após executar step N.
+
+```json
+{
+  "steps": [
+    {
+      "type": "create_rule",
+      "suggestable_type": "transaction",
+      "suggestable_id": <tx_id_âncora>,
+      "action": "create_category",
+      "action_params": {"name": "Materiais de Escritório", "type": "expense"},
+      "confidence": 90,
+      "reasoning": "Nova categoria para agrupar compras recorrentes de material."
+    },
+    {
+      "type": "create_rule",
+      "suggestable_type": "transaction",
+      "suggestable_id": <tx_id_âncora>,
+      "action": "create_categorization_rule",
+      "action_params": {
+        "pattern": "MATERIAIS ESCRIT",
+        "rule_type": "contains",
+        "category_id": "$chain.0.created_id"
+      },
+      "confidence": 90,
+      "reasoning": "Auto-categorizar compras futuras deste padrão."
+    },
+    {
+      "type": "categorize",
+      "suggestable_type": "transaction",
+      "suggestable_id": <tx_id_âncora>,
+      "action": "categorize_transaction",
+      "action_params": {
+        "transaction_ids": [101, 102, 103],
+        "category_id": "$chain.0.created_id"
+      },
+      "confidence": 90,
+      "reasoning": "Aplicar a nova categoria nas 3 transações pendentes."
+    }
+  ]
+}
+```
+
+**Regras da cadeia:**
+- Entre 2 e 5 steps
+- Referência `$chain.N.X` deve apontar para step anterior (`N < order atual`) cuja action seja de criação (retorna `created_id`): `create_category`, `create_provider`, `create_categorization_rule`, `create_provider_linking_rule`, `create_competence_rule`
+- Cada step precisa de `suggestable_type`/`suggestable_id` válidos — para steps de criação, use uma transação **âncora** representativa (mesma convenção do `bulk_create_suggestions`)
+- Undo reverte a cadeia inteira em ordem inversa (desfaz categorização → deleta regra → deleta categoria)
+
+**Quando NÃO usar cadeia:**
+- Se a categoria/fornecedor **já existe** e você só precisa criar regra+aplicar, `bulk_create_suggestions` com `create_rule: true` resolve (auto-chain)
+- Se for uma operação isolada (só categorizar sem regra), `create_suggestion` modo singular ou batch
 
 ## Higiene de Inbox (reject / delete)
 

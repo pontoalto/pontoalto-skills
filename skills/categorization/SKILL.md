@@ -1,7 +1,7 @@
 ---
 name: categorization
 description: "Fluxo completo de categorização de transações no PontoAlto: automático (analyze_uncategorized + suggest_category + bulk_create_suggestions), consulta (listar para WhatsApp) e manual (gestor informa categoria)."
-version: 0.1.0
+version: 0.2.0
 ---
 
 # Categorização de Lançamentos
@@ -19,7 +19,7 @@ Transações importadas chegam sem categoria. O gestor precisa categorizar todas
 ## Princípios
 
 1. **Uma sugestão por grupo** — transações do mesmo destinatário/pattern vão em UMA sugestão com `transaction_ids: [id1, id2, ...]`
-2. **Sempre criar regra junto** — ao categorizar, incluir `create_rule` (`rule_type: "contains"`). Exceções:
+2. **Sempre criar regra junto** — ao categorizar, incluir `create_rule` (`rule_type: "contains"`). O par (regra + categorização) é criado automaticamente como **cadeia** pelo `bulk_create_suggestions`, aparecendo na inbox como um único card agrupado que é aceito ou rejeitado atomicamente. Exceções:
    - **Duplicata exata**: `list_rules` já contém regra com mesmo pattern **e** mesma categoria — não cria.
    - **Conflito resolvível**: pattern já existe em regra de OUTRA categoria, **mas o histórico recente mostra que a categoria correta agora é a nova**. Propor `update_rule` na regra antiga (mudando `category_id`) ou `delete_rule` (soft-delete, marca `is_active=false`) via `create_suggestion` — o gestor aprova pela inbox. Ver § Atualizar/Desativar Regras abaixo.
    - **Ambíguo não resolvível**: pattern casa múltiplas categorias no histórico sem padrão claro. Categorizar sem regra e avisar o gestor.
@@ -36,7 +36,32 @@ Transações importadas chegam sem categoria. O gestor precisa categorizar todas
 7. `bulk_create_suggestions` uma única vez com todos os grupos no array `groups`
 8. Reportar: total por categoria + patterns ambíguos onde regra NÃO foi criada
 
-> **Tool choice:** `bulk_create_suggestions` aceita `groups` (output de `analyze_uncategorized`) — usar no fluxo automático. `create_suggestion` modo batch (param `suggestions`) — usar no fluxo manual quando os grupos não vieram de `analyze_uncategorized`.
+> **Tool choice:** `bulk_create_suggestions` aceita `groups` (output de `analyze_uncategorized`) — usar no fluxo automático. Cria automaticamente uma **cadeia** (regra + categorização) para cada grupo com `create_rule: true`. `create_suggestion` modo batch (param `suggestions`) — usar no fluxo manual quando os grupos não vieram de `analyze_uncategorized`. `create_suggestion_chain` — usar quando precisar criar **categoria nova** como parte do fluxo (ver § Criar Categoria Nova em Cadeia abaixo).
+
+## Criar Categoria Nova em Cadeia
+
+Quando o gestor pede pra categorizar transações em uma categoria que **ainda não existe** no sistema (ou quando você identifica que um grupo precisa de categoria nova), use `create_suggestion_chain` para encadear atomicamente: criar categoria → criar regra → categorizar.
+
+**Quando usar:**
+- Grupo com padrão claro (ex: 15 transações "PROVISAO GASTO CART CRED") que não cabe em nenhuma categoria existente → nova categoria "Provisão Cartão Crédito"
+- Gestor explicitamente pede nova categoria na resposta do fluxo manual
+
+**Quando NÃO usar:**
+- Categoria já existe → `bulk_create_suggestions` resolve (auto-chain)
+- Gestor pede "só categorizar isso, sem regra" → `create_suggestion` singular
+
+**Fluxo:**
+1. `list_categories` → confirmar que a categoria não existe (evitar duplicata)
+2. Montar cadeia de 3 steps:
+   - `create_category` (step 0) — nome, `type: expense|revenue|both`, opcional `parent_id`, `dre_group`
+   - `create_categorization_rule` (step 1) — pattern do grupo, `rule_type: "contains"`, `category_id: "$chain.0.created_id"`
+   - `categorize_transaction` (step 2) — `transaction_ids: [...]`, `category_id: "$chain.0.created_id"`
+3. Chamar `create_suggestion_chain(steps=[...])`
+4. Reportar: "Cadeia criada — gestor aprova no inbox e os 3 passos executam atomicamente."
+
+**suggestable âncora:** para os 3 steps, use `suggestable_type: "transaction"` + `suggestable_id` = primeiro ID do grupo (mesma convenção do `bulk_create_suggestions`). A transação âncora não precisa ser alvo da ação; é só identificador.
+
+**Exemplo completo:** ver skill `financial-domain` § Encadeamento de Actions.
 
 ## Fluxo consulta (listar para perguntar ao responsável)
 

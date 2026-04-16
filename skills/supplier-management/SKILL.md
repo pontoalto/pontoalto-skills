@@ -1,7 +1,7 @@
 ---
 name: supplier-management
 description: "Ajuste de datas de competência e vinculação de fornecedores a transações no PontoAlto: analyze_supplier_payments, link_provider, create_provider, set_competence_date."
-version: 0.1.0
+version: 0.2.0
 ---
 
 # Competência e Fornecedores
@@ -24,9 +24,26 @@ Transações de despesa precisam estar vinculadas ao fornecedor correto para an�
 **Como verificar:** `analyze_supplier_payments` → mostra pagamentos agrupados por empresa/pessoa, com matches a fornecedores conhecidos.
 
 **Como agir:**
-1. Para matches com fornecedor existente: criar sugestões `link_provider`
-2. Para empresas sem fornecedor cadastrado: sugerir `create_provider` + `link_provider`
-3. Se há padrões recorrentes: sugerir `create_provider_linking_rule`
+1. Para matches com fornecedor existente: `bulk_create_suggestions` com `supplier_groups=[...]`. Cria automaticamente **cadeia** (regra de vinculação + link) para cada grupo com `create_rule: true` — o par aparece na inbox como card único e é aceito/rejeitado atomicamente.
+2. Para empresas sem fornecedor cadastrado: usar `create_suggestion_chain` encadeando `create_provider` → `create_provider_linking_rule` → `link_provider` (ver § Criar Fornecedor Novo em Cadeia abaixo).
+3. Se há padrões recorrentes com fornecedor existente: o `create_rule: true` do `bulk_create_suggestions` já resolve.
+
+## Criar Fornecedor Novo em Cadeia
+
+Quando `analyze_supplier_payments` mostra um grupo de pagamentos sem fornecedor cadastrado, e você quer cadastrar + vincular + criar regra em uma operação atômica: use `create_suggestion_chain`.
+
+**Fluxo:**
+1. `list_providers` → confirmar que o fornecedor não existe (case-insensitive)
+2. Montar cadeia de 3 steps:
+   - `create_provider` (step 0) — `name` (nome da empresa como aparece no extrato)
+   - `create_provider_linking_rule` (step 1) — pattern do grupo, `rule_type: "contains"`, `provider_id: "$chain.0.created_id"`
+   - `link_provider` (step 2) — `transaction_ids: [...]` do grupo, `provider_id: "$chain.0.created_id"`
+3. Chamar `create_suggestion_chain(steps=[...])`
+4. Reportar: "Cadeia criada — gestor aprova no inbox e os 3 passos executam atomicamente (cadastro + regra + vinculação)."
+
+**suggestable âncora:** use a primeira transação do grupo como `suggestable_id` nos 3 steps (convenção do `bulk_create_suggestions`).
+
+**Exemplo completo:** ver skill `financial-domain` § Encadeamento de Actions.
 
 ## Atualizar/Desativar Regras
 
