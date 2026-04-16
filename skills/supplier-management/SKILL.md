@@ -45,6 +45,35 @@ Quando `analyze_supplier_payments` mostra um grupo de pagamentos sem fornecedor 
 
 **Exemplo completo:** ver skill `financial-domain` § Encadeamento de Actions.
 
+## Criar Regra Isolada (Fornecedor Já Existe e Já Vinculado)
+
+Caso específico: o fornecedor já está cadastrado, transações anteriores já estão vinculadas manualmente, mas **não há regra** que automatize vínculos futuros. Aqui não cabe `bulk_create_suggestions` (sem transações pendentes para linkar) nem cadeia (nada a criar antes). Use `create_suggestion` singular com `action: "create_provider_linking_rule"`.
+
+**Quando aplicar:**
+- `list_rules(type=provider)` mostra que não existe regra para o provider
+- `list_transactions` mostra vínculos manuais recorrentes com o mesmo provider (pattern estável na description)
+- Próxima importação tende a trazer o mesmo padrão e você quer automatizar
+
+**Payload:**
+```json
+{
+  "suggestable_type": "transaction",
+  "suggestable_id": <tx_id_âncora representativa do padrão>,
+  "action": "create_provider_linking_rule",
+  "action_params": {
+    "pattern": "NOME DO FORNECEDOR",
+    "rule_type": "contains",
+    "provider_id": <id>,
+    "category_id": <id opcional — preenche label + categoria>,
+    "priority": 0
+  },
+  "confidence": 85,
+  "reasoning": "3 pagamentos manuais nos últimos 2 meses com mesmo pattern — automatizar próximos."
+}
+```
+
+**Dedup do servidor:** rejeita se já existe regra com mesmo `(pattern, rule_type, provider_id)` — checar `list_rules(type=provider)` antes para não gerar sugestão que vai falhar na execução.
+
 ## Atualizar/Desativar Regras
 
 Mesmo princípio da skill `categorization` § Atualizar/Desativar Regras: quando `list_rules(type=provider)` ou `list_rules(type=competence)` mostrar uma regra obsoleta ou errada, propor `update_rule`/`delete_rule` via `create_suggestion` em vez de ignorar.
