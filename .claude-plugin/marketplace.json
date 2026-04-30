@@ -7,7 +7,10 @@
   "plugins": [
     {
       "name": "pontoalto",
-      "source": ".",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/pontoalto/pontoalto-skills.git"
+      },
       "description": "Assistente financeiro PontoAlto: guia gestores brasileiros no fechamento de mês (importações, categorização, competência, fornecedores, conciliação, custos e relatórios).",
       "version": "0.2.0",
       "homepage": "https://pontoalto.app",
