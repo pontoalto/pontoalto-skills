@@ -1,9 +1,9 @@
 ---
-description: "Atalho para categorizar transações pendentes no Ponto Alto (automático, consulta ou manual), sem passar pelo fluxo completo de fechamento."
+description: "Atalho para categorizar transações pendentes no PontoAlto (automático, consulta ou manual), sem passar pelo fluxo completo de fechamento."
 argument-hint: "[--local] [contexto livre]"
 ---
 
-# Ponto Alto — Categorização
+# PontoAlto — Categorização
 
 Atalho para a etapa de categorização. Use quando há lançamentos sem categoria e o gestor quer resolver esse ponto específico.
 

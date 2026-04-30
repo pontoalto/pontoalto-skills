@@ -1,10 +1,10 @@
 ---
 name: financial-domain
-description: "Contexto de domínio financeiro brasileiro que complementa as instruções do MCP Ponto Alto: escala de confidence, regimes tributários, DRE por competência, repasses de adquirente de cartão e tipos de reconciliação."
+description: "Contexto de domínio financeiro brasileiro que complementa as instruções do MCP PontoAlto: escala de confidence, regimes tributários, DRE por competência, repasses de adquirente de cartão e tipos de reconciliação."
 version: 0.3.0
 ---
 
-# Ponto Alto — Domínio Financeiro
+# PontoAlto — Domínio Financeiro
 
 Complemento de domínio ao que o MCP server já define em `instructions` (convenções de output, modelo de escrita via sugestões, actions disponíveis). Este documento cobre o que o MCP **não** diz e o Claude precisa saber para operar bem.
 
@@ -33,12 +33,15 @@ Usada para decidir se cria sugestão, apresenta ao gestor ou descarta.
 
 ## Reforço: Exceções ao Modelo de Sugestões
 
-O MCP deixa claro que escrita passa por sugestões. **Duas exceções** gravam direto, sem passar pelo inbox:
+O MCP deixa claro que escrita passa por sugestões. **Quatro exceções** gravam direto, sem passar pelo inbox:
 
 - `create_settlements` — liquida repasses de cartão em lote
 - `create_cash_settlements` — cria recebíveis de vendas em dinheiro
+- `save_sale_source_definition` — salva fonte de venda customizada (admin-only, com loop de preview antes do save)
+- `delete_sale_source_definition` — apaga fonte de venda customizada (admin-only)
+- `revert_sale_source_definition` — restaura a versão anterior da spec via activity log (admin-only, safety net)
 
-Nas demais operações: sempre via `create_suggestion` / `bulk_create_suggestions` / `create_suggestion_chain`. **A aprovação acontece manualmente pela UI do PontoAlto** — o plugin cria sugestões e para aí. Não chame `approve_suggestion`, `bulk_approve_suggestions` nem `confirm_approval` no CLI; o gestor revisa e aprova pela inbox visual.
+Nessas exceções, sempre peça confirmação explícita ao gestor antes de gravar. Nas demais operações: sempre via `create_suggestion` / `bulk_create_suggestions` / `create_suggestion_chain`. **A aprovação acontece manualmente pela UI do PontoAlto** — o plugin cria sugestões e para aí. Não chame `approve_suggestion`, `bulk_approve_suggestions` nem `confirm_approval` no CLI; o gestor revisa e aprova pela inbox visual.
 
 ## Encadeamento de Actions (Cadeias)
 
@@ -137,7 +140,7 @@ Além de `create_categorization_rule`, `create_provider_linking_rule` e `create_
 - Compatibilidade de categoria: `transaction_type=debit` exige `category.type ∈ {expense, both}`; `credit` exige `{revenue, both}`
 - Categoria ativa: rejeita categoria com `is_active=false`
 
-Ambas seguem o fluxo padrão de sugestões (inbox → `approve_suggestion` → `confirm_approval`). Quando propor cada uma e como embasar o reasoning está detalhado nas skills `categorization` § Atualizar/Desativar Regras e `provider-management` § Atualizar/Desativar Regras.
+Ambas seguem o fluxo padrão de sugestões: o plugin cria a sugestão e o gestor aprova manualmente pela UI do PontoAlto (não chame `approve_suggestion`/`confirm_approval` no CLI). Quando propor cada uma e como embasar o reasoning está detalhado nas skills `categorization` § Atualizar/Desativar Regras e `provider-management` § Atualizar/Desativar Regras.
 
 ## Erro em tool MCP
 

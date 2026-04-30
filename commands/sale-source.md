@@ -3,7 +3,7 @@ description: "Monta, testa e salva uma fonte de venda customizada (custom CSV) v
 argument-hint: "[--local] [nome ou key da fonte]"
 ---
 
-# Ponto Alto — Fonte de Venda Customizada
+# PontoAlto — Fonte de Venda Customizada
 
 Atalho para montar ou ajustar uma **Fonte de Venda** customizada. Use quando o gestor tem um CSV de um sistema ainda não integrado (ex: um ERP vertical, uma planilha exportada) e quer ensinar o PontoAlto a importar aquele layout.
 

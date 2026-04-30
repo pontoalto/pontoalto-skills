@@ -9,7 +9,7 @@
       "name": "pontoalto",
       "source": "./",
       "description": "Assistente financeiro PontoAlto: guia gestores brasileiros no fechamento de mês (importações, categorização, competência, fornecedores, conciliação, custos e relatórios).",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "homepage": "https://pontoalto.app",
       "license": "MIT",
       "keywords": [

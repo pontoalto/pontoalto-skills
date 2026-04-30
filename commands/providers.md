@@ -1,9 +1,9 @@
 ---
-description: "Atalho para vincular fornecedores a transações e ajustar datas de competência (DRE) no Ponto Alto."
+description: "Atalho para vincular fornecedores a transações e ajustar datas de competência (DRE) no PontoAlto."
 argument-hint: "[--local] [contexto livre]"
 ---
 
-# Ponto Alto — Fornecedores e Competência
+# PontoAlto — Fornecedores e Competência
 
 Atalho para as etapas de fornecedores e competência. Use quando há despesas sem fornecedor vinculado ou lançamentos com competência incorreta afetando o DRE.
 

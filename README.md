@@ -81,7 +81,7 @@ O fluxo do PontoAlto é majoritariamente orquestração de tools MCP (listar, an
 |-------------------------|-------------|
 | `claude-sonnet-4-6`     | **Padrão recomendado.** Rápido e preciso para o dia a dia (`/pontoalto:manager`, `/categorize`, `/reconcile`, `/providers`). |
 | `claude-haiku-4-5`      | Máxima velocidade em tarefas diretas (ex: `/pontoalto:report`, categorizações simples via regras). Pode perder nuance em análises mais abertas. |
-| `claude-opus-4-6`       | Reserve para raciocínio pesado: inconsistências complexas no fechamento, decisões de competência ambíguas ou análises de custo não triviais. |
+| `claude-opus-4-7`       | Reserve para raciocínio pesado: inconsistências complexas no fechamento, decisões de competência ambíguas ou análises de custo não triviais. |
 
 Troque de modelo com `/model claude-sonnet-4-6`. Se quiser ainda mais velocidade sem mudar de modelo, `/fast` acelera o output.
 
@@ -89,7 +89,7 @@ Troque de modelo com `/model claude-sonnet-4-6`. Se quiser ainda mais velocidade
 
 O plugin opera com estas garantias:
 
-- **Você tem a última palavra** — toda operação de escrita vai para a inbox como sugestão. Exceções diretas (sem inbox): liquidações de repasses (`create_settlements`), recebíveis em dinheiro (`create_cash_settlements`) e gerenciamento de fontes de venda (`save_sale_source_definition`, `delete_sale_source_definition`) — nessas, o Claude sempre pede confirmação explícita antes de gravar.
+- **Você tem a última palavra** — toda operação de escrita vai para a inbox como sugestão. Exceções diretas (sem inbox): liquidações de repasses (`create_settlements`), recebíveis em dinheiro (`create_cash_settlements`) e gerenciamento de fontes de venda (`save_sale_source_definition`, `delete_sale_source_definition`, `revert_sale_source_definition`) — nessas, o Claude sempre pede confirmação explícita antes de gravar.
 - **Prioriza impacto monetário** — maiores valores primeiro em qualquer listagem.
 - **Regras automáticas** — ao categorizar ou vincular fornecedor, cria regra (`contains`) para automatizar os próximos meses. Pattern ambíguo com histórico claro? Propõe atualizar ou desativar a regra antiga (via inbox). Pattern ambíguo sem padrão? Não cria regra e avisa.
 - **Confidence transparente** — matches abaixo de 55% são ignorados; entre 55-69% são advisory; ≥ 70% viram sugestão.

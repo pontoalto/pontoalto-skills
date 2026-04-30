@@ -4,9 +4,9 @@ description: "Guia canônico para montar, testar e salvar definições de fontes
 version: 0.4.0
 ---
 
-# Ponto Alto — Fontes de Venda Customizadas
+# PontoAlto — Fontes de Venda Customizadas
 
-O Ponto Alto importa vendas de múltiplas origens (ERPs verticais, sistemas de PDV, caixa físico, operadoras de cartão). Quando o gestor tem um CSV de um sistema que **ainda não está integrado**, ele pode criar uma **Fonte de Venda customizada**: uma definição declarativa (spec JSON) que ensina o importador a interpretar aquele layout específico — sem alterar o código do PontoAlto.
+O PontoAlto importa vendas de múltiplas origens (ERPs verticais, sistemas de PDV, caixa físico, operadoras de cartão). Quando o gestor tem um CSV de um sistema que **ainda não está integrado**, ele pode criar uma **Fonte de Venda customizada**: uma definição declarativa (spec JSON) que ensina o importador a interpretar aquele layout específico — sem alterar o código do PontoAlto.
 
 Esta skill é a **fonte única da verdade** do fluxo de ponta a ponta para quem monta fontes conversando com o Claude via MCP. O comando `/sale-source` é um atalho enxuto que delega aqui.
 

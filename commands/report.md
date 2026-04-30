@@ -1,9 +1,9 @@
 ---
-description: "Gera relatório mensal consolidado no Ponto Alto: DRE, orçado vs realizado e análise de custos. Só consulta — não cria sugestões."
+description: "Gera relatório mensal consolidado no PontoAlto: DRE, orçado vs realizado e análise de custos. Só consulta — não cria sugestões."
 argument-hint: "[--local] [YYYY-MM]"
 ---
 
-# Ponto Alto — Relatório Mensal
+# PontoAlto — Relatório Mensal
 
 Atalho para gerar o relatório mensal consolidado. Apenas consulta — não cria nem aprova sugestões.
 

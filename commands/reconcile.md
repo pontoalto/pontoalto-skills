@@ -1,9 +1,9 @@
 ---
-description: "Atalho para liquidações de repasses (cartão/dinheiro) e conciliação de vendas com transações bancárias no Ponto Alto."
+description: "Atalho para liquidações de repasses (cartão/dinheiro) e conciliação de vendas com transações bancárias no PontoAlto."
 argument-hint: "[--local] [contexto livre]"
 ---
 
-# Ponto Alto — Liquidações e Conciliação
+# PontoAlto — Liquidações e Conciliação
 
 Atalho para as etapas de liquidação e conciliação de vendas. Use para recebimentos de cartão, vendas em dinheiro e para casar vendas do sistema origem (ERP, PDV ou outro) com entradas no extrato.
 
