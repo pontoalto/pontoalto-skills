@@ -1,0 +1,27 @@
+{
+  "name": "pontoalto-skills",
+  "owner": {
+    "name": "PontoAlto",
+    "url": "https://pontoalto.app"
+  },
+  "plugins": [
+    {
+      "name": "pontoalto",
+      "source": ".",
+      "description": "Assistente financeiro PontoAlto: guia gestores brasileiros no fechamento de mês (importações, categorização, competência, fornecedores, conciliação, custos e relatórios).",
+      "version": "0.2.0",
+      "homepage": "https://pontoalto.app",
+      "license": "MIT",
+      "keywords": [
+        "pontoalto",
+        "finance",
+        "accounting",
+        "mcp",
+        "brazil",
+        "dre",
+        "conciliation",
+        "categorization"
+      ]
+    }
+  ]
+}
