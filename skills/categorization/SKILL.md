@@ -1,7 +1,7 @@
 ---
 name: categorization
 description: "Fluxo completo de categorização de transações no PontoAlto: automático (analyze_uncategorized + suggest_category + bulk_create_suggestions), consulta (listar para WhatsApp) e manual (gestor informa categoria)."
-version: 0.2.0
+version: 0.3.0
 ---
 
 # Categorização de Lançamentos
@@ -24,6 +24,7 @@ Transações importadas chegam sem categoria. O gestor precisa categorizar todas
    - **Conflito resolvível**: pattern já existe em regra de OUTRA categoria, **mas o histórico recente mostra que a categoria correta agora é a nova**. Propor `update_rule` na regra antiga (mudando `category_id`) ou `delete_rule` (soft-delete, marca `is_active=false`) via `create_suggestion` — o gestor aprova pela inbox. Ver § Atualizar/Desativar Regras abaixo.
    - **Ambíguo não resolvível**: pattern casa múltiplas categorias no histórico sem padrão claro. Categorizar sem regra e avisar o gestor.
 3. **Verificar duplicatas** — `list_suggestions(status=pending)` antes de criar, para não duplicar
+4. **OBRIGATÓRIO — Encadear sempre que possível** — se a operação envolve **dois ou mais passos logicamente ligados** (categorize + create_rule, categorize + create_rule + update_rule, criar categoria + criar regra + categorizar, etc.), use `create_suggestion_chain`. Isso garante aprovação atômica: o gestor aceita ou rejeita o conjunto inteiro, não passos soltos que podem deixar estado inconsistente. **Nunca crie esses passos como sugestões independentes** via `create_suggestion` modo batch quando há dependência lógica. Ver § Quando usar `create_suggestion_chain` abaixo.
 
 ## Fluxo automático (analyze_uncategorized)
 
@@ -36,30 +37,66 @@ Transações importadas chegam sem categoria. O gestor precisa categorizar todas
 7. `bulk_create_suggestions` uma única vez com todos os grupos no array `groups`
 8. Reportar: total por categoria + patterns ambíguos onde regra NÃO foi criada
 
-> **Tool choice:** `bulk_create_suggestions` aceita `groups` (output de `analyze_uncategorized`) — usar no fluxo automático. Cria automaticamente uma **cadeia** (regra + categorização) para cada grupo com `create_rule: true`. `create_suggestion` modo batch (param `suggestions`) — usar no fluxo manual quando os grupos não vieram de `analyze_uncategorized`. `create_suggestion_chain` — usar quando precisar criar **categoria nova** como parte do fluxo (ver § Criar Categoria Nova em Cadeia abaixo).
+> **Tool choice:** `bulk_create_suggestions` aceita `groups` (output de `analyze_uncategorized`) — usar no fluxo automático. Cria automaticamente uma **cadeia** (regra + categorização) para cada grupo com `create_rule: true`. `create_suggestion_chain` — usar **sempre que houver passos logicamente ligados** (ver § Quando usar `create_suggestion_chain`). `create_suggestion` modo batch (param `suggestions`) — apenas para sugestões realmente independentes entre si.
 
-## Criar Categoria Nova em Cadeia
+## Quando usar `create_suggestion_chain`
 
-Quando o gestor pede pra categorizar transações em uma categoria que **ainda não existe** no sistema (ou quando você identifica que um grupo precisa de categoria nova), use `create_suggestion_chain` para encadear atomicamente: criar categoria → criar regra → categorizar.
+**Regra geral:** se as ações precisam acontecer **juntas ou nenhuma**, use chain. Aprovação parcial deixa o estado inconsistente (ex: categorizou mas não criou regra → próxima fatura cai sem categoria; criou regra nova mas não atualizou a antiga → conflito).
 
-**Quando usar:**
-- Grupo com padrão claro (ex: 15 transações "PROVISAO GASTO CART CRED") que não cabe em nenhuma categoria existente → nova categoria "Provisão Cartão Crédito"
-- Gestor explicitamente pede nova categoria na resposta do fluxo manual
+**Casos que SEMPRE devem ser chain:**
 
-**Quando NÃO usar:**
-- Categoria já existe → `bulk_create_suggestions` resolve (auto-chain)
-- Gestor pede "só categorizar isso, sem regra" → `create_suggestion` singular
+| Cenário | Steps na cadeia |
+|---|---|
+| Categorizar grupo + criar regra | `create_categorization_rule` → `categorize_transaction` |
+| Corrigir regra antiga com categoria errada (ex: ELAINE → Loja 2 mas regra #79 aponta pra Publicidade) | `update_rule` (na regra antiga) → `create_categorization_rule` (regra nova mais específica/curta) → `categorize_transaction` |
+| Criar categoria nova + regra + categorização | `create_category` → `create_categorization_rule` → `categorize_transaction` |
+| Vincular fornecedor + categorizar transações dele | `link_provider` → `categorize_transaction` |
+| Reconciliar venda + ajustar competência | `reconcile_sale` → `set_competence_date` |
 
-**Fluxo:**
-1. `list_categories` → confirmar que a categoria não existe (evitar duplicata)
-2. Montar cadeia de 3 steps:
-   - `create_category` (step 0) — nome, `type: expense|revenue|both`, opcional `parent_id`, `dre_group`
-   - `create_categorization_rule` (step 1) — pattern do grupo, `rule_type: "contains"`, `category_id: "$chain.0.created_id"`
-   - `categorize_transaction` (step 2) — `transaction_ids: [...]`, `category_id: "$chain.0.created_id"`
-3. Chamar `create_suggestion_chain(steps=[...])`
-4. Reportar: "Cadeia criada — gestor aprova no inbox e os 3 passos executam atomicamente."
+**Quando NÃO usar chain (sugestões independentes):**
+- Categorizações de grupos diferentes que só compartilham contexto (gestor responde 5 patterns diferentes via WhatsApp) → `create_suggestion` modo batch
+- Sugestões cujo sucesso/falha de uma não impacta as outras
 
-**suggestable âncora:** para os 3 steps, use `suggestable_type: "transaction"` + `suggestable_id` = primeiro ID do grupo (mesma convenção do `bulk_create_suggestions`). A transação âncora não precisa ser alvo da ação; é só identificador.
+**Estrutura de uma cadeia:**
+
+```
+create_suggestion_chain({
+  tenant_id,
+  steps: [
+    {
+      type: "general",
+      suggestable_type: "rule_categorization",  // ou "transaction" para steps de categorize
+      suggestable_id: <id da regra ou transação âncora>,
+      action: "update_rule",
+      action_params: { rule_type: "categorization", rule_id: 79, category_id: 128 },
+      confidence: 90,
+      reasoning: "..."
+    },
+    {
+      type: "create_rule",
+      suggestable_type: "transaction",
+      suggestable_id: <id da tx âncora>,
+      action: "create_categorization_rule",
+      action_params: { pattern: "...", rule_type: "contains", category_id: 128 },
+      confidence: 90,
+      reasoning: "..."
+    },
+    {
+      type: "categorize",
+      suggestable_type: "transaction",
+      suggestable_id: <primeiro id do grupo>,
+      action: "categorize_transaction",
+      action_params: { transaction_ids: [...], category_id: 128 },
+      confidence: 95,
+      reasoning: "..."
+    }
+  ]
+})
+```
+
+**Referências entre steps:** quando um step depende de um ID criado por outro step da mesma cadeia (ex: `create_category` precede `create_categorization_rule` e a regra usa o `category_id` recém-criado), use `"$chain.<index>.created_id"` como valor. Index é base 0.
+
+**suggestable âncora:** para steps cujo target é uma transação (`categorize_transaction`, `create_categorization_rule`), use a primeira tx do grupo como âncora — não precisa ser alvo da ação, é só identificador. Para `update_rule`/`delete_rule`, o suggestable É a própria regra (`rule_categorization`/`rule_provider`/`rule_competence` + `rule_id`).
 
 **Exemplo completo:** ver skill `financial-domain` § Encadeamento de Actions.
 
@@ -104,8 +141,8 @@ Quando o gestor responde com a categoria (ex: via WhatsApp):
 1. `list_rules` + `list_suggestions(status=pending)` → preparar contexto
 2. `list_categories` → **obter `category_id` a partir do nome** que o gestor forneceu. O gestor fala por nome ("Marketing", "Aluguel"), mas a action exige ID. Faça match case-insensitive e, se ambíguo (ex: "Aluguel" vs "Aluguel Equipamentos"), confirme via `AskUserQuestion` antes de criar a sugestão
 3. Agrupar por destinatário/pattern
-4. `create_suggestion` modo batch — cada item com `transaction_ids: [...]` agrupados
-5. Sempre incluir sugestão `create_rule` junto com a categorização, exceto se o pattern é ambíguo (aparece em categorias diferentes no histórico)
+4. **Para cada destinatário com regra+categorize (e eventual update_rule de regra antiga conflitante): use `create_suggestion_chain`** — todos os passos do mesmo destinatário viram uma cadeia. **Não** crie esses passos como sugestões separadas via `create_suggestion` batch.
+5. Para destinatários sem necessidade de regra (pattern ambíguo): `create_suggestion` singular ou batch — apenas `categorize_transaction`.
 6. Reportar: total por categoria + patterns ambíguos onde regra NÃO foi criada
 
 ## Drill-down em transação individual (`get_transaction`)
@@ -160,3 +197,5 @@ O servidor rejeita a sugestão se `suggestable_type`/`suggestable_id` não casar
 **Atenção — semântica de `delete_rule`:** é **soft-delete** (marca `is_active=false`, mantém histórico). Para reativar, chame `update_rule` passando `is_active: true`. O gestor nunca perde a regra — só para de aplicá-la.
 
 **Antes de propor:** rode `list_rules(search=<pattern>)` para inspecionar a regra atual e confirmar que você não está pedindo ao gestor uma mudança sem base. O reasoning deve citar **dados concretos** (ex: "8 transações em 2026-03 / pattern parou de casar desde 2026-01").
+
+**Encadear update_rule com a categorização nova:** se o `update_rule` aparece junto com uma nova categorização (ou com uma `create_categorization_rule` de pattern alternativo), encadeie tudo via `create_suggestion_chain` — corrigir a regra antiga e categorizar a nova transação são partes da mesma decisão. Aprovar uma sem a outra deixa estado inconsistente. Ver § Quando usar `create_suggestion_chain`.
