@@ -13,6 +13,7 @@ pontoalto-skills/
 │   ├── categorize.md      # /pontoalto:categorize — só categorização
 │   ├── reconcile.md       # /pontoalto:reconcile — liquidações + conciliação
 │   ├── providers.md       # /pontoalto:providers — fornecedores + competência
+│   ├── bills.md           # /pontoalto:bills — Contas a Pagar/Receber (agenda, marcar pago, cancelar)
 │   ├── report.md          # /pontoalto:report — relatório mensal
 │   └── sale-source.md     # /pontoalto:sale-source — fonte de venda customizada (DSL + preview loop)
 ├── skills/
@@ -24,6 +25,8 @@ pontoalto-skills/
 │   │   └── SKILL.md       # Liquidações, conciliação de vendas, custos de serviços
 │   ├── provider-management/
 │   │   └── SKILL.md       # Competência e vinculação de fornecedores
+│   ├── bills-management/
+│   │   └── SKILL.md       # Bills: agendamento, marcação como pago, cancelamento (via sugestões)
 │   └── sale-sources/
 │       └── SKILL.md       # DSL de fontes customizadas, preview iterativo, exceção à inbox
 ├── README.md              # Orientado ao gestor final
@@ -38,6 +41,7 @@ Namespaceados automaticamente pelo `name` do plugin (`pontoalto`):
 - `/pontoalto:categorize [--local]` — só categorização (automático, consulta WhatsApp ou manual)
 - `/pontoalto:reconcile [--local]` — liquidações (cartão/dinheiro) + conciliação de vendas
 - `/pontoalto:providers [--local]` — vinculação de fornecedores + ajuste de competência
+- `/pontoalto:bills [--local]` — Contas a Pagar/Receber (agenda, marcar como pago, cancelar série)
 - `/pontoalto:report [--local] [YYYY-MM]` — relatório mensal (DRE, orçado vs realizado, custos)
 - `/pontoalto:sale-source [--local] [nome|key]` — monta/ajusta fonte de venda customizada via DSL + preview iterativo (admin-only)
 
@@ -58,6 +62,7 @@ As instruções dos MCP servers (convenções de R$, datas, modelo de escrita vi
 - `categorization` — fluxos específicos de categorização (automático, consulta WhatsApp, manual)
 - `reconciliation` — liquidações e conciliação detalhada
 - `provider-management` — fornecedores e competência
+- `bills-management` — Contas a Pagar/Receber: agendamento (single/recorrente), marcação como pago (via extrato ou Caixa) e cancelamento de séries — sempre via sugestões na inbox
 - `sale-sources` — DSL de fontes customizadas, loop de preview, exceção à inbox (escrita direta em `save_sale_source_definition` / `delete_sale_source_definition`)
 
 ## Desenvolvimento local

@@ -42,6 +42,7 @@ O gestor segue estas etapas diariamente, nesta ordem. Cada etapa depende da ante
 5. **Vincular Fornecedores** — `analyze_provider_payments` → vincular, seguir skill `provider-management`.
 6. **Conciliar Vendas** — `list_sales(status=unreconciled)` → encontrar matches, seguir skill `reconciliation`.
 7. **Custos de Serviços** — `get_cost_analysis(view=by_service)` → verificar serviços sem custo, seguir skill `reconciliation`.
+8. **Contas a Pagar/Receber** — `get_bills_aging` → se `overdue.count > 0` ou contas vencendo no mês, seguir skill `bills-management` (marcar como pago, agendar novas, cancelar séries obsoletas).
 
 ## Status do Fluxo
 
@@ -51,9 +52,9 @@ Ao conectar ao tenant, gerar um diagnóstico rápido do mês atual com **uma ún
 get_workflow_status(tenant_id, period=mês atual) → status consolidado das 7 etapas + resumo financeiro
 ```
 
-Essa tool retorna, em um único payload, o status (`ok` / `warning`) de cada etapa (`imports`, `settlements`, `categorization`, `competence`, `providers`, `reconciliation`, `costs`) mais `total_credits` / `total_debits` / `balance`. Mapear diretamente para o checklist abaixo.
+Essa tool retorna, em um único payload, o status (`ok` / `warning`) de cada etapa (`imports`, `settlements`, `categorization`, `competence`, `providers`, `reconciliation`, `costs`, `bills`) mais `total_credits` / `total_debits` / `balance`. Mapear diretamente para o checklist abaixo.
 
-> **Não** chamar `list_imports`, `transaction_stats`, `analyze_provider_payments`, `list_sales(unreconciled)` ou `get_cost_analysis` no diagnóstico inicial — o `get_workflow_status` já cobre tudo. Só aprofunde nessas tools se o gestor pedir detalhe ou ao executar uma etapa específica.
+> **Não** chamar `list_imports`, `transaction_stats`, `analyze_provider_payments`, `list_sales(unreconciled)`, `get_cost_analysis` ou `get_bills_aging` no diagnóstico inicial — o `get_workflow_status` já cobre tudo. Só aprofunde nessas tools se o gestor pedir detalhe ou ao executar uma etapa específica.
 
 Apresentar como checklist:
 
@@ -69,6 +70,7 @@ Apresentar como checklist:
 │ 5. Fornecedores             │ ✅ / ⚠️  │
 │ 6. Conciliação de vendas    │ ✅ / ⚠️  │
 │ 7. Custos de serviços       │ ✅ / ⚠️  │
+│ 8. Contas a Pagar/Receber   │ ✅ / ⚠️  │
 └─────────────────────────────┴──────────┘
 ```
 
@@ -92,6 +94,7 @@ Se o gestor quiser pular direto para uma etapa específica, oriente-o a usar um 
 - `/pontoalto:categorize` — só categorização (etapa 3)
 - `/pontoalto:reconcile` — liquidações + conciliação de vendas (etapas 2 e 6)
 - `/pontoalto:providers` — fornecedores + competência (etapas 4 e 5)
+- `/pontoalto:bills` — Contas a Pagar/Receber (agendamento, marcação como pago, cancelamento)
 - `/pontoalto:report` — relatório mensal consolidado (DRE, orçado vs realizado, custos)
 
 `/pontoalto:manager` é o fluxo completo — use quando for fechar o mês ou quando o gestor não souber por onde começar.
