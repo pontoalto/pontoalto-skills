@@ -58,14 +58,18 @@ Apresentar via `AskUserQuestion`:
 
 ## Marcar como Pago — Detalhe
 
-Para cada bill vencida:
+Para cada bill vencida, use a tool dedicada:
 
-1. `list_transactions(date_from=due_date-15, date_to=due_date+15, amount_min=valor, amount_max=valor, type=debit|credit conforme bill type)` — buscar candidatos do extrato
-2. Se houver match único e claro: criar sugestão `mark_bill_as_paid` com `bill_id`, `bank_account_id`, `transaction_id` (suggestable_type=bill, suggestable_id=bill_id)
-3. Se a bill foi paga em Caixa físico e não tem extrato: criar sugestão com `payment_date` no lugar de `transaction_id` (apenas se `bank_account_id` aponta para conta tipo Caixa)
-4. Se não há match plausível: deixar para o gestor decidir
+1. `find_bill_payment_candidates(bill_id)` — devolve candidatas já filtradas (mesma conta, type, status=Paid, valor±0.01, ±15 dias, exclui já-linkadas) + contexto da Bill + hints
+2. **`total_candidates == 1`**: criar sugestão `mark_bill_as_paid` com esse `transaction_id` (suggestable_type=bill, suggestable_id=bill_id)
+3. **`total_candidates > 1`**: apresentar top-3 ao gestor — não auto-propor
+4. **`total_candidates == 0` + hint `account_is_cash`**: criar sugestão com `payment_date` no lugar de `transaction_id`
+5. **`total_candidates == 0` + conta bancária**: não propor. Avisar gestor (pode ser bill obsoleta ou pagamento ainda não importado)
+6. **hint `bill_has_no_bank_account`**: perguntar ao gestor qual conta usar e re-chamar com `bank_account_id` explícito
 
 > Nunca proponha `payment_date` em conta bancária — só Caixa. Em conta corrente/poupança/operadora, a Transaction precisa vir do extrato.
+>
+> **Não use `list_transactions` para matching** — use `find_bill_payment_candidates`. A tool dedicada aplica regras de domínio que a query crua não conhece.
 
 ## Agendar Contas Novas — Detalhe
 
