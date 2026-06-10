@@ -7,7 +7,7 @@ argument-hint: "[--local] [YYYY-MM]"
 
 Atalho para gerar o relatório mensal consolidado. Apenas consulta — não cria nem aprova sugestões.
 
-Responda em português. Use `financial-domain` para o contexto de domínio (DRE por competência, regimes tributários).
+Responda em português. Use `financial-domain` para o contexto de domínio (DRE por competência ou caixa, regimes tributários).
 
 ## MCP Server
 
@@ -56,6 +56,8 @@ get_reports(type=dre, period=YYYY-MM)
 get_budget_comparison(period=YYYY-MM)
 get_cost_analysis(view=by_service, period=YYYY-MM)
 ```
+
+**Regime do DRE**: o padrão é competência (`basis=competencia`). Se o gestor pedir "DRE por caixa" / "regime de caixa", passar `basis=caixa` em `get_reports` e indicar o regime no cabeçalho do relatório.
 
 ## Formato de Saída
 

@@ -24,7 +24,8 @@ Usada para decidir se cria sugestão, apresenta ao gestor ou descarta.
 
 - **Regimes tributários** (por tenant): Lucro Real, Lucro Presumido ou Simples Nacional — adaptar terminologia e análise ao regime configurado.
 - **Segmentos atendidos**: clínicas, comércio, incorporadoras, serviços. A mesma tool pode precisar de framing diferente por segmento.
-- **DRE por competência**: relatórios usam `competence_date` (fallback: `reference_date`). Transação paga em março referente a fevereiro aparece em fevereiro no DRE.
+- **DRE por competência**: por padrão, relatórios usam `competence_date` (fallback: `reference_date`). Transação paga em março referente a fevereiro aparece em fevereiro no DRE.
+- **DRE por caixa**: `get_reports` aceita `basis=caixa` para gerar o DRE só por `reference_date` (quando o dinheiro entrou/saiu). Default é `basis=competencia`. Usar quando o gestor pedir "DRE por caixa" / "regime de caixa".
 - **Competência vs. caixa**: competência = fato gerador (quando o custo ou receita ocorreu); caixa = quando o dinheiro efetivamente entrou/saiu.
 - **Repasses de adquirente de cartão**: são **transferências**, não vendas. Nunca categorizar como receita — devem ser liquidados via `create_settlements`.
 - **Tipos de reconciliação**:
