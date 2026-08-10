@@ -22,6 +22,7 @@ Você continua no controle: toda operação de escrita passa por sugestões na i
 | `/pontoalto:reconcile`   | Liquidar repasses de cartão/dinheiro e conciliar vendas com o extrato bancário. |
 | `/pontoalto:providers`   | Vincular fornecedores a pagamentos e ajustar datas de competência para o DRE. |
 | `/pontoalto:bills`       | Contas a Pagar/Receber: revisar aging, agendar contas novas (single/recorrente), marcar como pago (extrato ou Caixa) e cancelar séries obsoletas. |
+| `/pontoalto:obras`       | Para incorporadoras: cadastrar obras e etapas, atribuir lançamentos do extrato a cada empreendimento e ver custo, receita e margem por obra. |
 | `/pontoalto:report`      | Gerar relatório mensal consolidado: DRE, orçado vs realizado e análise de custos. |
 | `/pontoalto:sale-source` | Montar ou ajustar uma fonte de venda customizada (CSV de sistema ainda não integrado), com loop de preview iterativo. |
 

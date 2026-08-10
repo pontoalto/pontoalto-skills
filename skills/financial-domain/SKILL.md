@@ -34,13 +34,17 @@ Usada para decidir se cria sugestão, apresenta ao gestor ou descarta.
 
 ## Reforço: Exceções ao Modelo de Sugestões
 
-O MCP deixa claro que escrita passa por sugestões. **Quatro exceções** gravam direto, sem passar pelo inbox:
+O MCP deixa claro que escrita passa por sugestões. Estas exceções gravam direto, sem passar pelo inbox:
 
 - `create_settlements` — liquida repasses de cartão em lote
 - `create_cash_settlements` — cria recebíveis de vendas em dinheiro
 - `save_sale_source_definition` — salva fonte de venda customizada (admin-only, com loop de preview antes do save)
 - `delete_sale_source_definition` — apaga fonte de venda customizada (admin-only)
 - `revert_sale_source_definition` — restaura a versão anterior da spec via activity log (admin-only, safety net)
+- `save_project` / `delete_project` — cadastro de obras e etapas de incorporadora (admin-only)
+- `save_cost_type` — cadastro de tipos de custo (admin-only)
+
+A linha divisória é **cadastro vs dado financeiro**. Cadastrar uma obra é configuração administrativa e grava direto; **atribuir** essa obra a lançamentos altera o resultado contábil e passa pela inbox, via action `link_project`. Não confunda os dois — não existe tool de escrita direta para atribuir obra.
 
 Nessas exceções, sempre peça confirmação explícita ao gestor antes de gravar. Nas demais operações: sempre via `create_suggestion` / `bulk_create_suggestions` / `create_suggestion_chain`. **A aprovação acontece manualmente pela UI do PontoAlto** — o plugin cria sugestões e para aí. Não chame `approve_suggestion`, `bulk_approve_suggestions` nem `confirm_approval` no CLI; o gestor revisa e aprova pela inbox visual.
 

@@ -43,6 +43,7 @@ O gestor segue estas etapas diariamente, nesta ordem. Cada etapa depende da ante
 6. **Conciliar Vendas** — `list_sales(status=unreconciled)` → encontrar matches, seguir skill `reconciliation`.
 7. **Custos de Serviços** — `get_cost_analysis(view=by_service)` → verificar serviços sem custo, seguir skill `reconciliation`.
 8. **Contas a Pagar/Receber** — `get_bills_aging` → se `overdue.count > 0` ou contas vencendo no mês, seguir skill `bills-management` (marcar como pago, agendar novas, cancelar séries obsoletas).
+9. **Obras** *(só incorporadoras)* — `get_project_results` → se o bloco `unassigned` tiver lançamentos, seguir skill `project-management` para atribuí-los às obras. Pule esta etapa quando `list_projects` vier vazio: o tenant não é do ramo.
 
 ## Status do Fluxo
 
@@ -95,6 +96,7 @@ Se o gestor quiser pular direto para uma etapa específica, oriente-o a usar um 
 - `/pontoalto:reconcile` — liquidações + conciliação de vendas (etapas 2 e 6)
 - `/pontoalto:providers` — fornecedores + competência (etapas 4 e 5)
 - `/pontoalto:bills` — Contas a Pagar/Receber (agendamento, marcação como pago, cancelamento)
+- `/pontoalto:obras` — obras de incorporadora: cadastro, atribuição de lançamentos, resultado por obra (etapa 9)
 - `/pontoalto:report` — relatório mensal consolidado (DRE, orçado vs realizado, custos)
 
 `/pontoalto:manager` é o fluxo completo — use quando for fechar o mês ou quando o gestor não souber por onde começar.
