@@ -52,6 +52,8 @@ Ordem importa:
 
 O passo 3 é o que mais economiza trabalho e é o mais esquecido. Use `list_categories` para achar as categorias de custo de obra (Materiais de Construção, Mão de Obra de Construção, Projetos e Engenharia, Terrenos) e mapeie cada uma ao seu tipo.
 
+Feito o mapa, **`categorize_transaction` já preenche o tipo de custo** — inclusive em lote. Não crie `link_project` só para informar tipo de custo: categorize primeiro e o tipo vem junto. Sobra para o `link_project` o que ele faz de único: a obra e a etapa.
+
 ### Se o plano de contas não for de incorporadora
 
 Tenants novos nascem com o **DRE genérico**, não o de incorporadora — isso é comportamento intencional do sistema. Se `list_categories` não mostrar "Aquisição de Terrenos", "Cimento, Areia e Brita", "Empreiteiros e Construtoras", avise o gestor que ele precisa rodar **Reorganizar DRE → Incorporadora** na tela de Categorias antes. Não há tool MCP para isso.
@@ -75,6 +77,8 @@ Sinais para inferir a obra:
 - **Valor e data** — medições de empreitada seguem cronograma da obra
 
 Quando não houver sinal claro, **pergunte ao gestor**. Atribuir errado polui o custo de duas obras de uma vez e o gestor pode não perceber.
+
+Quando o gestor for categorizar um lote grande que ele sabe ser de uma obra só, vale lembrá-lo da tela **Categorizar Lançamentos**: lá ele fixa a obra da sessão e cada lançamento categorizado já nasce com ela, sem passar por sugestão. Só preenche lançamento sem obra — atribuição anterior é preservada.
 
 ## Payload do link_project
 
@@ -100,9 +104,9 @@ Quando não houver sinal claro, **pergunte ao gestor**. Atribuir errado polui o 
 
 ## Rateio entre Obras
 
-Nota única que atende duas obras (ex.: caminhão de areia dividido) usa o split que já existe no sistema: o lançamento pai é dividido em filhos, e **cada filho recebe sua própria obra**.
+Nota única que atende duas obras (ex.: caminhão de areia dividido) usa o split que já existe no sistema: o lançamento pai é dividido em filhos, e **cada filho pode ter sua própria obra**.
 
-Sugira `split_transaction` primeiro; depois, `link_project` em cada filho. O relatório conta só os filhos — nunca o pai — então não há duplicação.
+Os filhos **herdam a obra, a etapa e o tipo de custo do pai**. Então, ao dividir um lançamento já atribuído, sugira `split_transaction` e depois `link_project` **só nas partes que vão para outra obra** — as demais já nascem certas. O relatório conta só os filhos, nunca o pai, então não há duplicação nem valor perdido.
 
 ## Ler o Resultado
 
