@@ -18,7 +18,7 @@ Você continua no controle: toda operação de escrita passa por sugestões na i
 | Command                  | Quando usar                                                        |
 |--------------------------|--------------------------------------------------------------------|
 | `/pontoalto:manager`     | Fluxo completo do mês — quando estiver fechando ou não souber por onde começar. Mostra um checklist do status e executa a primeira pendência. |
-| `/pontoalto:categorize`  | Só categorizar lançamentos pendentes (automático, consulta WhatsApp ou manual). |
+| `/pontoalto:categorize`  | Só categorizar lançamentos pendentes (automático, consulta WhatsApp ou manual), incluindo dividir um pagamento que cobre naturezas diferentes. |
 | `/pontoalto:reconcile`   | Liquidar repasses de cartão/dinheiro e conciliar vendas com o extrato bancário. |
 | `/pontoalto:providers`   | Vincular fornecedores a pagamentos e ajustar datas de competência para o DRE. |
 | `/pontoalto:bills`       | Contas a Pagar/Receber: revisar aging, agendar contas novas (single/recorrente), marcar como pago (extrato ou Caixa) e cancelar séries obsoletas. |

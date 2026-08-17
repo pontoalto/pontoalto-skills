@@ -52,5 +52,6 @@ Executar o fluxo escolhido conforme a skill `categorization`. Ao final, reportar
 
 - Uma sugestão por grupo/pattern (`transaction_ids: [...]`)
 - Sempre `create_rule: true` + `rule_type: "contains"`, exceto nos casos de ambiguidade documentados em `categorization` § Princípio 2
+- Lançamento que cobre naturezas diferentes (nota com material + serviço, fatura consolidada) não recebe categoria única: propor `split_transaction` — ver `categorization` § Dividir um lançamento
 - Priorizar por impacto monetário (maiores valores primeiro)
 - Se o gestor não responder em uma consulta WhatsApp: não bloquear — reportar como "aguardando resposta" e encerrar

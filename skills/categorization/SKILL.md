@@ -1,7 +1,7 @@
 ---
 name: categorization
-description: "Fluxo completo de categorização de transações no PontoAlto: automático (analyze_uncategorized + suggest_category + bulk_create_suggestions), consulta (listar para WhatsApp) e manual (gestor informa categoria)."
-version: 0.3.0
+description: "Fluxo completo de categorização de transações no PontoAlto: automático (analyze_uncategorized + suggest_category + bulk_create_suggestions), consulta (listar para WhatsApp), manual (gestor informa categoria) e divisão de lançamentos (split_transaction)."
+version: 0.4.0
 ---
 
 # Categorização de Lançamentos
@@ -144,6 +144,52 @@ Quando o gestor responde com a categoria (ex: via WhatsApp):
 4. **Para cada destinatário com regra+categorize (e eventual update_rule de regra antiga conflitante): use `create_suggestion_chain`** — todos os passos do mesmo destinatário viram uma cadeia. **Não** crie esses passos como sugestões separadas via `create_suggestion` batch.
 5. Para destinatários sem necessidade de regra (pattern ambíguo): `create_suggestion` singular ou batch — apenas `categorize_transaction`.
 6. Reportar: total por categoria + patterns ambíguos onde regra NÃO foi criada
+
+## Dividir um lançamento (`split_transaction`)
+
+Um único pagamento às vezes cobre naturezas diferentes: nota com material + serviço, fatura de cartão com despesas de categorias distintas, boleto consolidado de vários fornecedores. Forçar uma categoria só distorce o DRE. Nesses casos, proponha a **divisão** em vez de categorizar o lançamento inteiro.
+
+**Quando dividir:**
+- O gestor informa que parte do valor é de outra natureza (ex: "desses R$ 8.000, R$ 5.000 é material e R$ 3.000 é mão de obra")
+- A descrição/`raw_description` mostra composição (ex: nota com itens de tipos diferentes) — confirme os valores com o gestor antes de propor
+- Incorporadora: um pagamento único rateado entre obras
+
+**Quando NÃO dividir:**
+- Só para separar competências → use `set_competence_date`
+- Transferência entre contas próprias, lançamento cancelado, ou lançamento que já é parte de outra divisão → o servidor rejeita
+
+```
+create_suggestion({
+  type: "general",
+  suggestable_type: "transaction",
+  suggestable_id: <id da transação a dividir>,
+  action: "split_transaction",
+  action_params: {
+    transaction_id: <id da transação>,   // ATENÇÃO: singular. Split é a única action
+                                          // de transação que NÃO usa transaction_ids
+    splits: [
+      { amount: 5000.00, description: "Material", category_id: 28 },
+      { amount: 3000.00, description: "Mão de obra", category_id: 31 }
+    ]
+  },
+  confidence: 90,
+  reasoning: "Gestor confirmou: nota 4471 tem R$ 5.000 de material e R$ 3.000 de mão de obra."
+})
+```
+
+**Campos por parte** (`splits[]`): `amount` (obrigatório), `description`, `category_id`, `competence_date`, `provider_id`, `project_id`, `project_phase_id`, `cost_type_id`.
+
+**Regras que o servidor valida na criação** — se falhar, a sugestão nem chega na inbox e o erro volta pra você corrigir:
+- Mínimo 2 partes
+- Soma das partes **exatamente** igual ao valor do lançamento (sem centavo de diferença)
+- Lançamento existe e é divisível
+
+**Depois da divisão:**
+- As partes viram lançamentos filhos; o pai **para de contar** no DRE (só as folhas entram) e as partes somem do fluxo de caixa (só a raiz entra). Não há dupla contagem.
+- **Não crie também um `categorize_transaction` para o lançamento pai** — a categoria de cada parte vai dentro do próprio `splits[]`. Categorizar o pai não tem efeito no relatório.
+- Partes sem `category_id` próprio herdam fornecedor e obra do pai. Parte que declara `project_id` próprio precisa declarar também sua `project_phase_id` (a etapa do pai é de outra obra).
+- Dividir de novo um lançamento já dividido substitui as partes anteriores.
+- O gestor pode desfazer pela inbox: as partes são removidas e o lançamento volta inteiro.
 
 ## Drill-down em transação individual (`get_transaction`)
 

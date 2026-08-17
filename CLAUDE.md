@@ -21,7 +21,7 @@ pontoalto-skills/
 │   ├── financial-domain/
 │   │   └── SKILL.md       # Confidence scale, contexto financeiro brasileiro, exceções
 │   ├── categorization/
-│   │   └── SKILL.md       # Fluxo automático, consulta e manual de categorização
+│   │   └── SKILL.md       # Fluxo automático, consulta e manual de categorização + split
 │   ├── reconciliation/
 │   │   └── SKILL.md       # Liquidações, conciliação de vendas, custos de serviços
 │   ├── provider-management/
@@ -63,7 +63,7 @@ Os commands dependem dos MCP servers do PontoAlto:
 As instruções dos MCP servers (convenções de R$, datas, modelo de escrita via sugestões, actions disponíveis) vêm diretamente do próprio servidor. As skills do plugin complementam com o que o MCP não fornece:
 
 - `financial-domain` — escala de confidence, contexto financeiro brasileiro (regimes, DRE, adquirente de cartão), exceções ao modelo de sugestões
-- `categorization` — fluxos específicos de categorização (automático, consulta WhatsApp, manual)
+- `categorization` — fluxos específicos de categorização (automático, consulta WhatsApp, manual) e divisão de lançamentos (`split_transaction`) quando um pagamento cobre naturezas diferentes
 - `reconciliation` — liquidações e conciliação detalhada
 - `provider-management` — fornecedores e competência
 - `bills-management` — Contas a Pagar/Receber: agendamento (single/recorrente), marcação como pago (via extrato ou Caixa) e cancelamento de séries — sempre via sugestões na inbox
