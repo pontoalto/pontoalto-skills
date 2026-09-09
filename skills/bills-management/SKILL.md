@@ -1,7 +1,7 @@
 ---
 name: bills-management
 description: "Gestão de Contas a Pagar/Receber (Bills) no PontoAlto: agendar (com recorrência), marcar como pago (via extrato ou Caixa) e cancelar agendadas/séries — sempre via sugestões na inbox."
-version: 0.2.0
+version: 0.3.0
 ---
 
 # Contas a Pagar/Receber (Bills)
@@ -151,7 +151,8 @@ Gestor traz uma lista (whatsapp, planilha) com novas contas. Para cada item:
 ## Casos Especiais
 
 - **Bill paga em Caixa físico não importada**: `mark_bill_as_paid` com `payment_date` e `bank_account_id` apontando para conta tipo Caixa. Em outra conta o sistema rejeita.
-- **Bill com `competence_date` errada**: depois de marcada como paga, ajuste competência na Transaction resultante via `set_competence_date` (sugestão sobre `suggestable_type=transaction`).
+- **Bill agendada com `competence_date` errada**: corrija na própria bill, antes de efetivar — `set_competence_date` com `action_params.bill_ids` e `suggestable_type=bill`. O `mark_bill_as_paid` copia a competência da bill para a Transaction, então acertar antes evita retrabalho. Só bill `scheduled` aceita: em bill já paga a competência que vale é a do lançamento, e aí sim o ajuste é sobre `suggestable_type=transaction`.
+- **Muitas bills com competência errada de uma vez** (ex.: série antiga em que a competência ficou congelada na data de criação): o volume se resolve na tela Contas a Pagar/Receber, ação em lote **Ajustar Competência** — o modo "aplicar regras de competência" recalcula a partir do vencimento de cada conta usando as `CompetenceDateRule` já cadastradas. Aponte esse caminho ao gestor em vez de abrir dezenas de sugestões.
 - **Categoria incompatível**: bill `payable` exige categoria `expense` ou `both`. Bill `receivable` exige `revenue` ou `both`. O servidor rejeita.
 
 ## Quando NÃO Usar Bills
@@ -165,6 +166,6 @@ Gestor traz uma lista (whatsapp, planilha) com novas contas. Para cada item:
 - **Use `find_bill_payment_candidates` para matching de bills** — NÃO use `list_transactions` para isso
 - Para marcar como pago, prefira `transaction_id` (extrato é fonte da verdade); `payment_date` só em Caixa
 - Cancelar série é irreversível — confirme com o gestor
-- `suggestable_type` certo: `bill` para mark/cancel, `transaction` para create_bill
+- `suggestable_type` certo: `bill` para mark/cancel/competência de agendada, `transaction` para create_bill
 - Bills agendadas com `competence_date` mudam o DRE no mês da competência (não no de vencimento)
 - Sugestões `mark_bill_as_paid` inválidas são rejeitadas na criação — leia a mensagem de erro e corrija antes de retentar

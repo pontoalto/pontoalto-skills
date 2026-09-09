@@ -1,7 +1,7 @@
 ---
 name: provider-management
-description: "Ajuste de datas de competência e vinculação de fornecedores a transações no PontoAlto: analyze_provider_payments, link_provider, create_provider, set_competence_date."
-version: 0.2.0
+description: "Ajuste de datas de competência (de lançamentos e de contas agendadas) e vinculação de fornecedores a transações no PontoAlto: analyze_provider_payments, link_provider, create_provider, set_competence_date."
+version: 0.3.0
 ---
 
 # Competência e Fornecedores
@@ -10,12 +10,25 @@ version: 0.2.0
 
 A data de competência determina em qual mês o lançamento aparece no DRE. Muitas transações têm competência diferente da data do extrato (ex: aluguel pago dia 5 refere ao mês anterior).
 
-**Como verificar:** `list_transactions` com filtros de período — procurar transações onde `competence_date` está ausente ou parece incorreta.
+**Como verificar:** `list_transactions` com filtros de período — procurar transações onde `competence_date` está ausente ou parece incorreta. Para contas ainda não efetivadas, `list_bills(status=scheduled)` devolve `due_date` e `competence_date` lado a lado.
 
 **Como agir:**
 1. Identificar transações que precisam de ajuste (recorrentes como aluguel, seguros, parcelas)
 2. Criar sugestões via `create_suggestion` (type=set_competence_date)
 3. Se há padrões recorrentes: sugerir `create_competence_rule`
+
+**Dois alvos possíveis — o suggestable manda:**
+
+| Alvo | `suggestable_type` | `action_params` |
+|---|---|---|
+| Lançamento do extrato | `transaction` | `transaction_ids: [...]` |
+| Conta agendada (Bill) | `bill` | `bill_ids: [...]` |
+
+Pode mandar as duas listas na mesma action, mas o suggestable tem que casar com a lista correspondente — o servidor rejeita `suggestable_type=bill` com `transaction_ids` (e vice-versa) já na criação da sugestão, com a mensagem dizendo qual lista falta.
+
+Só bill `scheduled` aceita ajuste. Conta já paga virou `Transaction`, e a competência que o DRE lê é a do lançamento — o servidor ignora bills pagas/canceladas e devolve quantas pulou.
+
+**Volume:** quando são dezenas ou centenas de contas agendadas com competência errada (típico de série antiga em que a competência ficou congelada na data de criação), não abra sugestão uma a uma. A tela Contas a Pagar/Receber tem a ação em lote **Ajustar Competência**, com modo "aplicar regras de competência" que recalcula tudo a partir do vencimento de cada conta usando as `CompetenceDateRule` já cadastradas. Reporte o diagnóstico e aponte esse caminho.
 
 ## Vincular Fornecedores
 

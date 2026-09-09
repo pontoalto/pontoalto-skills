@@ -52,15 +52,16 @@ Apresentar via `AskUserQuestion`:
 
 1. `list_transactions` filtrando por padrões recorrentes (aluguel, condomínio, seguros, parcelas de empréstimo). Use `amount_min` para focar em lançamentos de maior impacto e `exclude_internal_transfers=true` para remover ruído de transferências entre contas.
 2. Identificar transações onde `competence_date` está ausente ou diferente do mês de competência real
-3. Criar sugestões `set_competence_date` agrupadas por pattern (`transaction_ids: [...]`)
+3. Criar sugestões `set_competence_date` agrupadas por pattern (`transaction_ids: [...]`, `suggestable_type=transaction`)
 4. Para recorrências confirmadas, sugerir `create_competence_rule`
+5. Contas ainda não efetivadas entram pelo mesmo caminho: `list_bills(status=scheduled)` para achar competência errada e `set_competence_date` com `bill_ids: [...]` e `suggestable_type=bill`. Volume alto (série antiga com competência congelada) é caso para a ação em lote **Ajustar Competência** na tela Contas a Pagar/Receber, não para dezenas de sugestões.
 
 ## Relatório Final
 
 Reportar:
 - Fornecedores vinculados (quantos e quais categorias)
 - Fornecedores novos propostos (aguardando criação)
-- Transações com competência ajustada
+- Transações e contas agendadas com competência ajustada
 - Regras criadas (linking + competência)
 - Sugestões pendentes restantes
 
