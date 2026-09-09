@@ -1,7 +1,7 @@
 ---
 name: financial-domain
 description: "Contexto de domínio financeiro brasileiro que complementa as instruções do MCP PontoAlto: escala de confidence, regimes tributários, DRE por competência, repasses de adquirente de cartão e tipos de reconciliação."
-version: 0.3.0
+version: 0.4.0
 ---
 
 # PontoAlto — Domínio Financeiro
@@ -25,6 +25,7 @@ Usada para decidir se cria sugestão, apresenta ao gestor ou descarta.
 - **Regimes tributários** (por tenant): Lucro Real, Lucro Presumido ou Simples Nacional — adaptar terminologia e análise ao regime configurado.
 - **Segmentos atendidos**: clínicas, comércio, incorporadoras, serviços. A mesma tool pode precisar de framing diferente por segmento.
 - **DRE por competência**: por padrão, relatórios usam `competence_date` (fallback: `reference_date`). Transação paga em março referente a fevereiro aparece em fevereiro no DRE.
+- **Atenção ao parâmetro `basis`**: ele existe em duas tools com significados diferentes. Em `get_reports` escolhe o regime do DRE (`competencia` / `caixa`); em `get_cost_analysis` escolhe a data que posiciona a linha no período (`venda` / `producao`, ver skill `cost-analysis`). Não são a mesma escolha.
 - **DRE por caixa**: `get_reports` aceita `basis=caixa` para gerar o DRE só por `reference_date` (quando o dinheiro entrou/saiu). Default é `basis=competencia`. Usar quando o gestor pedir "DRE por caixa" / "regime de caixa".
 - **Competência vs. caixa**: competência = fato gerador (quando o custo ou receita ocorreu); caixa = quando o dinheiro efetivamente entrou/saiu.
 - **Repasses de adquirente de cartão**: são **transferências**, não vendas. Nunca categorizar como receita — devem ser liquidados via `create_settlements`.

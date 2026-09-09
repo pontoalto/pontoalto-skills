@@ -1,7 +1,7 @@
 ---
 name: reconciliation
-description: "Liquidação de repasses de cartão e vendas em dinheiro, conciliação de vendas com transações bancárias, e análise de custos de serviços no PontoAlto."
-version: 0.1.0
+description: "Liquidação de repasses de cartão e vendas em dinheiro e conciliação de vendas com transações bancárias no PontoAlto."
+version: 0.2.0
 ---
 
 # Liquidações e Conciliação
@@ -38,13 +38,6 @@ Em tenant de conta única, pode pular.
 
 Quando um match ≥80 do `analyze_unreconciled_sales` parecer suspeito (ex: valor igual mas nome divergente), use `get_transaction(id)` para ver o payload completo da transação candidata: `raw_description`, histórico de enriquecimento PIX (nome completo do pagador, CPF mascarado) e label atual. Confirma ou descarta o match antes de criar a sugestão.
 
-## Cadastrar/Atualizar Custos de Serviços
+## Custos e Margem
 
-Serviços e procedimentos precisam ter custo cadastrado para análise de rentabilidade.
-
-**Como verificar:** `get_cost_analysis(view=by_service)` → serviços com margem zerada ou sem custo indicam cadastro incompleto.
-
-**Como agir:**
-1. Listar serviços sem custo atribuído
-2. Informar o gestor quais procedimentos/produtos precisam de atualização de custo
-3. Se há custos desatualizados: comparar com períodos anteriores para identificar variações
+Fora do escopo desta skill. Custo do item vendido, margem, markup e itens sem custo cadastrado estão na skill `cost-analysis` — inclusive a base de data (venda vs produção), que não é a mesma coisa que conciliação.

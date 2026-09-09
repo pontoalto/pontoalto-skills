@@ -15,6 +15,7 @@ pontoalto-skills/
 │   ├── providers.md       # /pontoalto:providers — fornecedores + competência
 │   ├── bills.md           # /pontoalto:bills — Contas a Pagar/Receber (agenda, marcar pago, cancelar)
 │   ├── obras.md           # /pontoalto:obras — obras de incorporadora (cadastro, atribuição, resultado)
+│   ├── costs.md           # /pontoalto:costs — análise de custos e margem por item
 │   ├── report.md          # /pontoalto:report — relatório mensal
 │   └── sale-source.md     # /pontoalto:sale-source — fonte de venda customizada (DSL + preview loop)
 ├── skills/
@@ -23,7 +24,9 @@ pontoalto-skills/
 │   ├── categorization/
 │   │   └── SKILL.md       # Fluxo automático, consulta e manual de categorização + split
 │   ├── reconciliation/
-│   │   └── SKILL.md       # Liquidações, conciliação de vendas, custos de serviços
+│   │   └── SKILL.md       # Liquidações e conciliação de vendas
+│   ├── cost-analysis/
+│   │   └── SKILL.md       # Custo do item vendido, margem, markup, base venda vs produção
 │   ├── provider-management/
 │   │   └── SKILL.md       # Competência e vinculação de fornecedores
 │   ├── bills-management/
@@ -46,6 +49,7 @@ Namespaceados automaticamente pelo `name` do plugin (`pontoalto`):
 - `/pontoalto:providers [--local]` — vinculação de fornecedores + ajuste de competência
 - `/pontoalto:bills [--local]` — Contas a Pagar/Receber (agenda, marcar como pago, cancelar série)
 - `/pontoalto:obras [--local] [obra]` — obras de incorporadora: cadastro, atribuição de lançamentos, resultado por empreendimento
+- `/pontoalto:costs [--local] [YYYY-MM]` — análise de custos: itens sem custo cadastrado, margem por tipo e por fornecedor, itens com pior margem
 - `/pontoalto:report [--local] [YYYY-MM]` — relatório mensal (DRE, orçado vs realizado, custos)
 - `/pontoalto:sale-source [--local] [nome|key]` — monta/ajusta fonte de venda customizada via DSL + preview iterativo (admin-only)
 
@@ -65,6 +69,7 @@ As instruções dos MCP servers (convenções de R$, datas, modelo de escrita vi
 - `financial-domain` — escala de confidence, contexto financeiro brasileiro (regimes, DRE, adquirente de cartão), exceções ao modelo de sugestões
 - `categorization` — fluxos específicos de categorização (automático, consulta WhatsApp, manual) e divisão de lançamentos (`split_transaction`) quando um pagamento cobre naturezas diferentes
 - `reconciliation` — liquidações e conciliação detalhada
+- `cost-analysis` — custo do item vendido (`SaleItem` × `CostItem`, casamento por nome), as sete views do `get_cost_analysis`, base de data venda vs produção, margem bruta vs de contribuição, markup como multiplicador. Área **read-only**: não existe action de sugestão para cadastrar custo de item — o cadastro é do gestor, na UI
 - `provider-management` — fornecedores e competência
 - `bills-management` — Contas a Pagar/Receber: agendamento (single/recorrente), marcação como pago (via extrato ou Caixa) e cancelamento de séries — sempre via sugestões na inbox
 - `project-management` — obras de incorporadora. Obra→Etapa é hierarquia; Tipo de Custo é dimensão global (não é nível da árvore). Cadastro é escrita direta admin-only (`save_project`, `save_cost_type`, `delete_project`), mas **atribuir** obra a lançamento passa pela inbox via action `link_project`

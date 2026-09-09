@@ -41,7 +41,7 @@ O gestor segue estas etapas diariamente, nesta ordem. Cada etapa depende da ante
 4. **Ajustar Competência** — identificar transações com competência incorreta, seguir skill `provider-management`.
 5. **Vincular Fornecedores** — `analyze_provider_payments` → vincular, seguir skill `provider-management`.
 6. **Conciliar Vendas** — `list_sales(status=unreconciled)` → encontrar matches, seguir skill `reconciliation`.
-7. **Custos de Serviços** — `get_cost_analysis(view=by_service)` → verificar serviços sem custo, seguir skill `reconciliation`.
+7. **Custos de Itens** — `get_cost_analysis(view=missing_costs)` → itens faturados sem custo cadastrado, seguir skill `cost-analysis`.
 8. **Contas a Pagar/Receber** — `get_bills_aging` → se `overdue.count > 0` ou contas vencendo no mês, seguir skill `bills-management` (marcar como pago, agendar novas, cancelar séries obsoletas).
 9. **Obras** *(só incorporadoras)* — `get_project_results` → se o bloco `unassigned` tiver lançamentos, seguir skill `project-management` para atribuí-los às obras. Pule esta etapa quando `list_projects` vier vazio: o tenant não é do ramo.
 

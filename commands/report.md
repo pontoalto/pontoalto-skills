@@ -7,7 +7,7 @@ argument-hint: "[--local] [YYYY-MM]"
 
 Atalho para gerar o relatório mensal consolidado. Apenas consulta — não cria nem aprova sugestões.
 
-Responda em português. Use `financial-domain` para o contexto de domínio (DRE por competência ou caixa, regimes tributários).
+Responda em português. Use `financial-domain` para o contexto de domínio (DRE por competência ou caixa, regimes tributários) e `cost-analysis` para a leitura da margem.
 
 ## MCP Server
 
@@ -49,12 +49,13 @@ Usar `AskUserQuestion` com 2 opções: **Gerar assim mesmo** / **Resolver pendê
 
 ## Geração do Relatório
 
-Chamar as 3 tools em paralelo:
+Chamar as tools em paralelo:
 
 ```
-get_reports(type=dre, period=YYYY-MM)
-get_budget_comparison(period=YYYY-MM)
-get_cost_analysis(view=by_service, period=YYYY-MM)
+get_reports(report=dre, from=YYYY-MM-DD, to=YYYY-MM-DD)
+get_budget_comparison(from=YYYY-MM-DD, to=YYYY-MM-DD)
+get_cost_analysis(view=by_service, from=YYYY-MM-DD, to=YYYY-MM-DD)
+get_cost_analysis(view=missing_costs, from=YYYY-MM-DD, to=YYYY-MM-DD)
 ```
 
 **Regime do DRE**: o padrão é competência (`basis=competencia`). Se o gestor pedir "DRE por caixa" / "regime de caixa", passar `basis=caixa` em `get_reports` e indicar o regime no cabeçalho do relatório.
@@ -82,12 +83,16 @@ Top 10 categorias com maior variação (% e R$). Destacar:
 - 🟢 Realizado abaixo do orçado (economia)
 - 🔴 Realizado acima do orçado (estouro > 10%)
 
-### 4. Análise de Custos por Serviço
+### 4. Análise de Custos por Item
 
-Top 10 serviços por margem:
-- Serviços com maior margem bruta
-- Serviços com margem < 20% (alerta)
-- Serviços sem custo cadastrado (advisory — não entra no cálculo)
+Informar a base medida (`basis`: venda ou produção — vem na resposta) e, antes da margem, quanto de receita entrou sem custo cadastrado (`missing_costs.total_revenue_without_cost`): a margem abaixo é otimista na proporção disso.
+
+Top 10 tipos de item por margem:
+- Itens com maior margem bruta
+- Itens com margem < 20% (alerta)
+- Itens sem custo cadastrado (advisory — entram com custo zero e inflam a margem)
+
+Markup vem como multiplicador (`2,86x`), não percentual. Detalhe na skill `cost-analysis`.
 
 ### 5. Alertas e Observações
 
