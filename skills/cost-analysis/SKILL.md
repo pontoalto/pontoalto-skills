@@ -1,7 +1,7 @@
 ---
 name: cost-analysis
-description: "Análise de custos e margem por item vendido no PontoAlto: as sete views do get_cost_analysis (summary, by_service, by_provider, top_costly, missing_costs, execution_coverage, breakdown), base venda vs produção, margem bruta vs margem de contribuição, markup, e o que fazer com item vendido sem custo cadastrado."
-version: 0.1.0
+description: "Análise de custos e margem por item vendido no PontoAlto: as sete views do get_cost_analysis (summary, by_service, by_provider, top_costly, missing_costs, execution_coverage, breakdown), base venda vs produção, margem bruta vs margem de contribuição, markup, e a action set_item_cost para cadastrar o custo que falta pela inbox."
+version: 0.2.0
 ---
 
 # Análise de Custos
@@ -19,7 +19,7 @@ O casamento é **por nome do item**, e o custo aplicado é o da vigência válid
 - Renomear o item no sistema de origem **quebra o casamento** e o item volta a custar zero
 - Custo aqui é do **item vendido**, não da categoria do lançamento. `get_cost_analysis` e o DRE (`get_reports`) respondem perguntas diferentes e divergem legitimamente — não tente casar os dois números
 
-⚠️ **Não confunda com tipo de custo (`cost_types`).** Aquilo é dimensão de obra de incorporadora (Material, Mão de Obra, Imposto), documentada na skill `project-management`. `save_cost_type` **não** cadastra custo de item vendido, e não existe tool que cadastre.
+⚠️ **Não confunda com tipo de custo (`cost_types`).** Aquilo é dimensão de obra de incorporadora (Material, Mão de Obra, Imposto), documentada na skill `project-management`. `save_cost_type` **não** cadastra custo de item vendido — para isso existe a action `set_item_cost`, descrita abaixo.
 
 ## Comece sempre por missing_costs
 
@@ -37,6 +37,8 @@ Devolve os itens que entraram no período sem custo algum, ordenados por receita
 | `custo_zerado` | O item existe (`cost_item_id` preenchido) mas nenhuma vigência devolveu valor | Adicionar a vigência que falta, para a data e o fornecedor certos |
 
 Se `total_revenue_without_cost` for material frente à receita do período, **diga isso antes de qualquer número de margem**: a margem reportada é otimista por construção. O campo `provider_name` de cada item já indica o executante mais frequente — é o candidato natural a receber a vigência.
+
+Cada item vem com as duas âncoras de que a sugestão precisa: `cost_item_id` (quando o item existe) e `sale_item_id` (a linha faturada, quando ele ainda vai ser criado).
 
 ## Base de data: venda vs produção
 
@@ -105,15 +107,46 @@ Depois, só se houver dúvida: `execution_coverage` (base produção suspeita) o
 
 Para tendência, rode o mesmo período do mês anterior e compare `margin_pct` por tipo — variação acima de 10 pontos costuma ser custo novo, reajuste de repasse ou item que perdeu o casamento de nome.
 
-## O que dá para escrever aqui: quase nada
+## Cadastrar o custo que falta: `set_item_cost`
 
-**Não existe action de sugestão para cadastrar item de custo nem vigência de custo.** Cadastro de custo é feito pelo gestor na UI (Análise de Custos → Custos de Serviços Faltantes) ou por importação de tabela de preços. Nesta área o Claude **reporta e prioriza**, não escreve.
+A lacuna que o `missing_costs` aponta se fecha por sugestão na inbox, como qualquer outra escrita. A action é `set_item_cost` e cobre os dois `reason`:
 
-O que ainda cabe como sugestão, e pertence a outras skills:
-- Pagamento ao fornecedor sem vínculo no extrato → `link_provider` (skill `provider-management`)
-- Lançamento de custo na categoria errada → `categorize_transaction` (skill `categorization`)
+```json
+{
+  "type": "set_item_cost",
+  "suggestable_type": "sale_item",
+  "suggestable_id": 4821,
+  "action": "set_item_cost",
+  "action_params": {
+    "item_name": "RAIO X TORAX",
+    "cost": 32.50,
+    "provider_id": 17,
+    "effective_date": "2026-01-01"
+  },
+  "confidence": 80,
+  "reasoning": "12 exames faturados em março a R$ 120,00 médios, sem custo cadastrado. Repasse de R$ 32,50 confirmado com o laboratório."
+}
+```
 
-Ao entregar a lista de `missing_costs`, entregue **acionável**: nome do item, receita do período, quantidade, executante sugerido (`provider_name`) e a receita média por unidade (`avg_revenue`) — é a referência que o gestor usa para julgar se o custo que vai cadastrar faz sentido.
+**Suggestable, por caso** — o servidor rejeita a combinação errada:
+
+| `reason`       | `action_params`  | `suggestable_type` | `suggestable_id` |
+|----------------|------------------|--------------------|------------------|
+| `sem_cadastro` | `item_name`      | `sale_item`        | o `sale_item_id` do item |
+| `custo_zerado` | `cost_item_id`   | `cost_item`        | o mesmo `cost_item_id` |
+
+**Regras do payload:**
+- `cost` obrigatório e maior que zero — sugerir custo zero é o mesmo estado que já existe
+- `provider_id` opcional, mas quase sempre certo: o custo do exame varia por laboratório e o do procedimento por profissional. Use o `provider_name` que o `missing_costs` devolveu, resolvendo o id em `list_providers`; se o fornecedor não existir, encadeie `create_provider` → `set_item_cost` com `create_suggestion_chain`
+- `effective_date` opcional; omitida vale o início do ano corrente. Informe quando souber a data do reajuste — a vigência é por data e o custo de março não deve reescrever o de janeiro
+- `type` opcional e só usado quando o item é criado; omitido vale o padrão do tipo de negócio (produto para comércio, exame para clínica)
+- Vigência já existente para o mesmo item, fornecedor e data é **atualizada**, não duplicada — é assim que se corrige um custo errado
+
+**Confidence:** custo confirmado com o fornecedor (contrato, tabela, nota) → 85+. Custo inferido de itens parecidos ou de média de mercado → 60-75, e diga no `reasoning` de onde veio o número. **Nunca invente um custo plausível**: sem base, reporte o item e deixe o campo para o gestor.
+
+Ao apresentar a lista, entregue **acionável**: nome do item, receita do período, quantidade, executante sugerido (`provider_name`) e a receita média por unidade (`avg_revenue`) — é a referência que o gestor usa para julgar se o custo proposto faz sentido.
+
+O gestor aprova pela inbox, e o undo reverte por inteiro: apaga a vigência criada e também o item, quando foi a sugestão que o criou.
 
 ## Regras de ouro
 
@@ -121,4 +154,4 @@ Ao entregar a lista de `missing_costs`, entregue **acionável**: nome do item, r
 - Sempre informe a base (`basis`) junto do número; nunca compare períodos medidos em bases diferentes
 - Markup é `x`, margem é `%` — não misture as escalas
 - Priorize por receita, não por quantidade: dez itens de R$ 20,00 sem custo importam menos que um de R$ 4.000,00
-- Não prometa cadastrar custo — aqui o Claude não escreve
+- Custo sem base não vira sugestão: proponha `set_item_cost` só com número apurado, e diga a origem dele no `reasoning`

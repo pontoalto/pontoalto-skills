@@ -1,11 +1,11 @@
 ---
-description: "Análise de custos e margem por item vendido no PontoAlto: itens sem custo cadastrado, margem por tipo e por fornecedor, itens com pior margem. Só consulta — não cria sugestões."
+description: "Análise de custos e margem por item vendido no PontoAlto: itens sem custo cadastrado, margem por tipo e por fornecedor, itens com pior margem. Propõe o custo que falta via sugestões na inbox."
 argument-hint: "[--local] [YYYY-MM]"
 ---
 
 # PontoAlto — Análise de Custos
 
-Atalho para a análise de custos e margem. Use quando o gestor quer saber onde o resultado se forma, quais itens dão prejuízo, ou por que a margem do mês mudou.
+Atalho para a análise de custos e margem. Use quando o gestor quer saber onde o resultado se forma, quais itens dão prejuízo, por que a margem do mês mudou, ou quer fechar as lacunas de custo do cadastro.
 
 Responda em português. Use a skill `cost-analysis` para o fluxo detalhado e `financial-domain` para o contexto de domínio.
 
@@ -50,10 +50,13 @@ Apresentar via `AskUserQuestion`:
 ## Fechar Lacunas de Custo — Detalhe
 
 1. `get_cost_analysis(view=missing_costs)` → ordenar por receita
-2. Separar por `reason`: `sem_cadastro` (falta o item) vs `custo_zerado` (falta a vigência)
-3. Para cada item do topo, entregar a linha pronta para digitar: nome do item, receita do período, quantidade, `provider_name` sugerido e receita média por unidade
-4. Se o executante não estiver cadastrado como fornecedor, checar em `list_providers` e avisar que o cadastro do fornecedor vem antes
-5. **Não prometer cadastrar** — não existe tool de escrita para custo de item; o cadastro é do gestor, na tela de Custos de Serviços Faltantes
+2. Separar por `reason`: `sem_cadastro` (falta o item, âncora `sale_item_id`) vs `custo_zerado` (falta a vigência, âncora `cost_item_id`)
+3. `list_suggestions(status=pending)` → não repetir sugestão de custo já na inbox
+4. Para cada item do topo, apresentar: nome, receita do período, quantidade, `provider_name` sugerido e receita média por unidade
+5. **Com custo apurado** (o gestor informou, ou há contrato/tabela/nota): criar sugestão `set_item_cost` via `create_suggestion` (batch quando forem vários). Se o executante ainda não é fornecedor cadastrado, encadear `create_provider` → `set_item_cost` com `create_suggestion_chain`
+6. **Sem custo apurado**: perguntar ao gestor via `AskUserQuestion` ou entregar a lista para ele preencher — não inventar valor
+
+Detalhe do payload e das âncoras na skill `cost-analysis` § Cadastrar o custo que falta.
 
 ## Entender a Margem — Detalhe
 
@@ -88,7 +91,8 @@ Depois: tabela de margem por tipo, top itens com pior margem, e a lista acionáv
 
 ## Regras de Ouro
 
-- **Nunca criar sugestões** neste command — só consulta
+- A única escrita deste command é `set_item_cost`, sempre via sugestão na inbox — margem, DRE e conciliação não se mexem daqui
+- Custo sem base não vira sugestão: pergunte ao gestor em vez de estimar
 - `missing_costs` primeiro, sempre
 - Informar a base (`basis`) junto de qualquer número; nunca comparar períodos em bases diferentes
 - Markup é multiplicador (`2,86x`), margem é percentual — não misturar
