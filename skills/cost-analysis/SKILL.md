@@ -96,6 +96,8 @@ Use `breakdown` quando um número agregado parecer errado: ele mostra venda a ve
 
 ## Diagnóstico recomendado
 
+Em sequência, uma view por vez, sempre com o mesmo período. A primeira chamada faz a varredura de vendas e agenda; as seguintes do mesmo `from`/`to` reaproveitam o cache do servidor (10 min). Chamar as views em paralelo faz todas varrerem ao mesmo tempo e disputarem os 2 slots de tools pesadas.
+
 ```
 get_cost_analysis(view=missing_costs, from, to)   → o que está sem custo
 get_cost_analysis(view=summary, from, to)         → totais e margens do período

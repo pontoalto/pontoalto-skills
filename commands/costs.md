@@ -26,7 +26,7 @@ Argumento recebido: `$ARGUMENTS`
 
 ## Diagnóstico
 
-Chamar em paralelo:
+Chamar **em sequência**, uma view de cada vez, sempre com o mesmo `from`/`to`:
 
 ```
 get_cost_analysis(view=missing_costs, from, to)  → itens faturados sem custo
@@ -34,6 +34,8 @@ get_cost_analysis(view=summary, from, to)        → totais, margem bruta e de c
 get_cost_analysis(view=by_service, from, to)     → margem por tipo de item
 get_cost_analysis(view=top_costly, from, to)     → itens com pior margem
 ```
+
+Em sequência a primeira chamada faz a varredura pesada e as seguintes reaproveitam o cache do servidor (10 min por período); em paralelo as quatro varrem ao mesmo tempo e disputam os 2 slots de tools pesadas. Se vier `Servidor ocupado, tente novamente em alguns segundos`, aguarde 10 s e repita a mesma chamada uma vez.
 
 **Abrir o relatório pelo `missing_costs`**, não pelo summary: se há receita relevante sem custo cadastrado, toda margem abaixo está inflada e o gestor precisa saber disso antes de ler o número.
 

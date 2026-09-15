@@ -148,6 +148,15 @@ Além de `create_categorization_rule`, `create_provider_linking_rule` e `create_
 
 Ambas seguem o fluxo padrão de sugestões: o plugin cria a sugestão e o gestor aprova manualmente pela UI do PontoAlto (não chame `approve_suggestion`/`confirm_approval` no CLI). Quando propor cada uma e como embasar o reasoning está detalhado nas skills `categorization` § Atualizar/Desativar Regras e `provider-management` § Atualizar/Desativar Regras.
 
+## Tools pesadas e concorrência
+
+`get_cost_analysis`, `analyze_unreconciled_sales`, `get_reports` e `get_budget_comparison` varrem meses de vendas, agenda ou lançamentos. O servidor executa no máximo **2 delas ao mesmo tempo** (entre todos os tenants e usuários) e devolve `Servidor ocupado, tente novamente em alguns segundos` para quem espera mais de 20 s por um slot.
+
+- Chame tools pesadas **em sequência**, nunca várias em paralelo.
+- Views de `get_cost_analysis` do mesmo período compartilham cache (10 min): peça a primeira, espere, depois as outras.
+- Ao operar vários tenants (sweep), no máximo **2 tenants por vez**.
+- Ao receber `Servidor ocupado`, aguarde 10 s e repita a mesma chamada **uma vez**. Se repetir o erro, siga o fluxo e informe o gestor.
+
 ## Erro em tool MCP
 
 Logar o erro e seguir para o próximo item do fluxo. Não bloquear o workflow inteiro por uma tool que falhou em uma transação ou grupo.

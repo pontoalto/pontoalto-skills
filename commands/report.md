@@ -49,7 +49,7 @@ Usar `AskUserQuestion` com 2 opções: **Gerar assim mesmo** / **Resolver pendê
 
 ## Geração do Relatório
 
-Chamar as tools em paralelo:
+Chamar as tools nesta ordem, uma de cada vez (são todas tools pesadas; o servidor executa no máximo 2 ao mesmo tempo):
 
 ```
 get_reports(report=dre, from=YYYY-MM-DD, to=YYYY-MM-DD)
@@ -57,6 +57,8 @@ get_budget_comparison(from=YYYY-MM-DD, to=YYYY-MM-DD)
 get_cost_analysis(view=by_service, from=YYYY-MM-DD, to=YYYY-MM-DD)
 get_cost_analysis(view=missing_costs, from=YYYY-MM-DD, to=YYYY-MM-DD)
 ```
+
+As duas views de `get_cost_analysis` do mesmo período compartilham cache no servidor: a segunda é barata se vier depois da primeira. Se vier `Servidor ocupado, tente novamente em alguns segundos`, aguarde 10 s e repita a mesma chamada uma vez.
 
 **Regime do DRE**: o padrão é competência (`basis=competencia`). Se o gestor pedir "DRE por caixa" / "regime de caixa", passar `basis=caixa` em `get_reports` e indicar o regime no cabeçalho do relatório.
 
