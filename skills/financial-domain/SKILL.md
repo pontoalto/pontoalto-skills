@@ -1,7 +1,7 @@
 ---
 name: financial-domain
 description: "Contexto de domínio financeiro brasileiro que complementa as instruções do MCP PontoAlto: escala de confidence, regimes tributários, DRE por competência, repasses de adquirente de cartão e tipos de reconciliação."
-version: 0.4.0
+version: 0.5.0
 ---
 
 # PontoAlto — Domínio Financeiro
@@ -150,10 +150,11 @@ Ambas seguem o fluxo padrão de sugestões: o plugin cria a sugestão e o gestor
 
 ## Tools pesadas e concorrência
 
-`get_cost_analysis`, `analyze_unreconciled_sales`, `get_reports` e `get_budget_comparison` varrem meses de vendas, agenda ou lançamentos. O servidor executa no máximo **2 delas ao mesmo tempo** (entre todos os tenants e usuários) e devolve `Servidor ocupado, tente novamente em alguns segundos` para quem espera mais de 20 s por um slot.
+`get_cost_analysis`, `analyze_unreconciled_sales`, `get_reports`, `get_budget_comparison` e `get_ltv_analysis` varrem meses de vendas, agenda ou lançamentos. O servidor executa no máximo **2 delas ao mesmo tempo** (entre todos os tenants e usuários) e devolve `Servidor ocupado, tente novamente em alguns segundos` para quem espera mais de 20 s por um slot.
 
 - Chame tools pesadas **em sequência**, nunca várias em paralelo.
 - Views de `get_cost_analysis` do mesmo período compartilham cache (10 min): peça a primeira, espere, depois as outras.
+- `get_ltv_analysis` não tem cache e varre todo o histórico de vendas a cada chamada: prefira uma chamada com `limit` maior a várias pequenas.
 - Ao operar vários tenants (sweep), no máximo **2 tenants por vez**.
 - Ao receber `Servidor ocupado`, aguarde 10 s e repita a mesma chamada **uma vez**. Se repetir o erro, siga o fluxo e informe o gestor.
 

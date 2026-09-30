@@ -16,6 +16,7 @@ pontoalto-skills/
 │   ├── bills.md           # /pontoalto:bills — Contas a Pagar/Receber (agenda, marcar pago, cancelar)
 │   ├── obras.md           # /pontoalto:obras — obras de incorporadora (cadastro, atribuição, resultado)
 │   ├── costs.md           # /pontoalto:costs — custos e margem por item (+ set_item_cost)
+│   ├── ltv.md             # /pontoalto:ltv — LTV por médico ou por cliente (só consulta)
 │   ├── report.md          # /pontoalto:report — relatório mensal
 │   └── sale-source.md     # /pontoalto:sale-source — fonte de venda customizada (DSL + preview loop)
 ├── skills/
@@ -27,6 +28,8 @@ pontoalto-skills/
 │   │   └── SKILL.md       # Liquidações e conciliação de vendas
 │   ├── cost-analysis/
 │   │   └── SKILL.md       # Custo do item vendido, margem, markup, base venda vs produção, set_item_cost
+│   ├── ltv-analysis/
+│   │   └── SKILL.md       # LTV por médico/cliente, atribuição, identidade, lifetime vs período, recompra
 │   ├── provider-management/
 │   │   └── SKILL.md       # Competência e vinculação de fornecedores
 │   ├── bills-management/
@@ -50,6 +53,7 @@ Namespaceados automaticamente pelo `name` do plugin (`pontoalto`):
 - `/pontoalto:bills [--local]` — Contas a Pagar/Receber (agenda, marcar como pago, cancelar série)
 - `/pontoalto:obras [--local] [obra]` — obras de incorporadora: cadastro, atribuição de lançamentos, resultado por empreendimento
 - `/pontoalto:costs [--local] [YYYY-MM]` — análise de custos: itens sem custo cadastrado (e a sugestão que fecha a lacuna), margem por tipo e por fornecedor, itens com pior margem
+- `/pontoalto:ltv [--local] [medico|cliente] [YYYY|YYYY-MM]` — LTV por médico (clínica) ou por cliente (produto): pacientes mais valiosos, recompra, clientes recorrentes que pararam de comprar. Só consulta; padrão é o histórico completo
 - `/pontoalto:report [--local] [YYYY-MM]` — relatório mensal (DRE, orçado vs realizado, custos)
 - `/pontoalto:sale-source [--local] [nome|key]` — monta/ajusta fonte de venda customizada via DSL + preview iterativo (admin-only)
 
@@ -70,6 +74,7 @@ As instruções dos MCP servers (convenções de R$, datas, modelo de escrita vi
 - `categorization` — fluxos específicos de categorização (automático, consulta WhatsApp, manual) e divisão de lançamentos (`split_transaction`) quando um pagamento cobre naturezas diferentes
 - `reconciliation` — liquidações e conciliação detalhada
 - `cost-analysis` — custo do item vendido (`SaleItem` × `CostItem`, casamento por nome), as sete views do `get_cost_analysis`, base de data venda vs produção, margem bruta vs de contribuição, markup como multiplicador, e a action `set_item_cost` (cadastra item + vigência pela inbox, com âncora `cost_item` ou `sale_item` conforme o item já exista)
+- `ltv-analysis` — `get_ltv_analysis`: atribuição do paciente inteiro ao médico com quem mais gastou, identidade do cliente (CPF → nome → referência), lifetime vs período, métricas de recompra, leitura crítica (amostra pequena, prontuário faltando) e o aviso de que a tool é pesada e sem cache. Só leitura
 - `provider-management` — fornecedores e competência
 - `bills-management` — Contas a Pagar/Receber: agendamento (single/recorrente), marcação como pago (via extrato ou Caixa) e cancelamento de séries — sempre via sugestões na inbox
 - `project-management` — obras de incorporadora. Obra→Etapa é hierarquia; Tipo de Custo é dimensão global (não é nível da árvore). Cadastro é escrita direta admin-only (`save_project`, `save_cost_type`, `delete_project`), mas **atribuir** obra a lançamento passa pela inbox via action `link_project`

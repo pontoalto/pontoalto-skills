@@ -9,7 +9,7 @@ Gestores financeiros que operam o PontoAlto diariamente e querem:
 - Fechar o mês sem precisar navegar entre dezenas de telas
 - Categorizar dezenas/centenas de lançamentos em lote, com regras automáticas
 - Perguntar dúvidas específicas ("quais transações sem fornecedor em março?") e receber resposta direta
-- Gerar relatórios prontos (DRE, orçado vs realizado, margem por serviço) por comando
+- Gerar relatórios prontos (DRE, orçado vs realizado, margem por serviço, LTV) por comando
 
 Você continua no controle: toda operação de escrita passa por sugestões na inbox, que você aprova ou rejeita.
 
@@ -24,6 +24,7 @@ Você continua no controle: toda operação de escrita passa por sugestões na i
 | `/pontoalto:bills`       | Contas a Pagar/Receber: revisar aging, agendar contas novas (single/recorrente), marcar como pago (extrato ou Caixa) e cancelar séries obsoletas. |
 | `/pontoalto:obras`       | Para incorporadoras: cadastrar obras e etapas, atribuir lançamentos do extrato a cada empreendimento e ver custo, receita e margem por obra. |
 | `/pontoalto:costs`       | Ver onde o resultado se forma: margem por tipo de item e por fornecedor, itens com pior margem, e cadastrar pela inbox o custo dos itens que ainda não têm. |
+| `/pontoalto:ltv`         | Ver quanto cada paciente ou cliente vale ao longo do tempo: médicos que trazem os pacientes mais valiosos, melhores clientes, taxa de recompra e clientes recorrentes que pararam de comprar. |
 | `/pontoalto:report`      | Gerar relatório mensal consolidado: DRE, orçado vs realizado e análise de custos. |
 | `/pontoalto:sale-source` | Montar ou ajustar uma fonte de venda customizada (CSV de sistema ainda não integrado), com loop de preview iterativo. |
 
@@ -48,6 +49,11 @@ Todos os commands aceitam a flag `--local` para apontar para o MCP server de des
 **Só categorizar pendências:**
 ```
 /pontoalto:categorize
+```
+
+**LTV dos clientes que voltam a comprar:**
+```
+/pontoalto:ltv cliente
 ```
 
 **Relatório de um mês específico:**
