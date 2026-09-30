@@ -1,7 +1,7 @@
 ---
 name: cost-analysis
 description: "Análise de custos e margem por item vendido no PontoAlto: as sete views do get_cost_analysis (summary, by_service, by_provider, top_costly, missing_costs, execution_coverage, breakdown), base venda vs produção, margem bruta vs margem de contribuição, markup, e a action set_item_cost para cadastrar o custo que falta pela inbox."
-version: 0.2.0
+version: 0.2.1
 ---
 
 # Análise de Custos
@@ -72,6 +72,8 @@ Na base venda a coverage não diz nada (tudo é `executed`): só rode nela para 
 - **Markup** vem como **multiplicador**, não percentual: `2,86x` significa preço 2,86 vezes o custo. Nunca leia markup como porcentagem de margem — são escalas diferentes (`2,86x` equivale a 65% de margem bruta).
 
 Se `premises_pct` estiver em 0%, a margem de contribuição é igual à bruta — avise o gestor que as premissas não estão configuradas em vez de apresentar as duas como se fossem análises distintas.
+
+**Margem por médico para decidir investimento não sai daqui.** `by_provider` mede só a produção do próprio executante. O paciente que o médico traz compra também laboratório, imagem e exames de outros executantes, com margens muito diferentes — multiplicar o LTV pela `margin_pct` do `by_provider` dá um número errado. O ganho por paciente e por atendimento de cada médico, com a cesta inteira, vem pronto em `get_ltv_analysis` (skill `ltv-analysis`), com o mesmo custo desta análise na base venda.
 
 ## As views
 

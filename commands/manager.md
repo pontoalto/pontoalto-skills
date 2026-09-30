@@ -98,7 +98,7 @@ Se o gestor quiser pular direto para uma etapa específica, oriente-o a usar um 
 - `/pontoalto:bills` — Contas a Pagar/Receber (agendamento, marcação como pago, cancelamento)
 - `/pontoalto:obras` — obras de incorporadora: cadastro, atribuição de lançamentos, resultado por obra (etapa 9)
 - `/pontoalto:costs` — custos e margem por item vendido, e o custo que falta cadastrar (etapa 7)
-- `/pontoalto:ltv` — LTV por médico ou por cliente: pacientes mais valiosos, recompra, clientes que pararam de comprar
+- `/pontoalto:ltv` — LTV e margem por médico, especialidade ou cliente: onde investir em marketing, recompra, clientes que pararam de comprar
 - `/pontoalto:report` — relatório mensal consolidado (DRE, orçado vs realizado, custos)
 
 `/pontoalto:manager` é o fluxo completo — use quando for fechar o mês ou quando o gestor não souber por onde começar.

@@ -1,31 +1,41 @@
 ---
 name: ltv-analysis
-description: "LTV (lifetime value) no PontoAlto: get_ltv_analysis por médico (clínica) ou por cliente (negócio de produto), atribuição do paciente ao médico principal, identidade do cliente, lifetime vs período, recompra e clientes recorrentes que pararam de comprar. Só leitura."
-version: 0.1.0
+description: "LTV (lifetime value) no PontoAlto: get_ltv_analysis por médico, por médico × especialidade (clínica) ou por cliente (negócio de produto), com a margem da cesta inteira do paciente (custo, margem bruta, premissas e margem de contribuição por paciente e por visita). Atribuição do paciente ao médico principal, identidade do cliente, lifetime vs período, recompra, onde investir em marketing e clientes recorrentes que pararam de comprar. Só leitura."
+version: 0.2.0
 ---
 
 # LTV — Lifetime Value
 
 ## O que o LTV mede — e o que ele não mede
 
-O LTV **não sai do extrato bancário**. Ele lê as **vendas importadas** (`SaleItem` dos itens não cancelados) e soma o `total_paid` de cada paciente ou cliente ao longo do tempo. Três consequências:
+O LTV **não sai do extrato bancário**. Ele lê as **vendas importadas** (`SaleItem` dos itens não cancelados) e soma o `total_paid` de cada paciente ou cliente ao longo do tempo. Consequências:
 
-- **LTV é receita, não lucro.** Não há custo no cálculo. Um médico com LTV alto pode ter margem baixa — para margem, use a skill `cost-analysis`. Não subtraia custo do LTV à mão: as duas análises atribuem receita de jeitos diferentes (veja abaixo) e os números não se encaixam
+- **LTV é receita; a margem vem ao lado.** Toda linha traz também o custo de tudo o que os pacientes dela compraram — laboratório, imagem e exames de outros executantes inclusos — e daí a margem bruta e a de contribuição, em valor, em % e por paciente/visita. É essa margem, não o LTV, que diz quanto o paciente deixa na clínica (veja § Margem)
 - **Não depende de categorização nem de conciliação** — só das importações de vendas. Mês sem venda importada é mês sem LTV
 - **O histórico começa na primeira importação.** "Lifetime" é desde que o tenant começou a importar vendas no PontoAlto: paciente antigo aparece como novo e o LTV dele fica subestimado. Se o gestor estranhar números baixos, confira com ele desde quando as vendas estão no sistema
 
-## As duas dimensões
+## As dimensões
 
-`get_ltv_analysis` agrega por **médico** ou por **cliente**. O padrão acompanha a tela: `medico` para clínica, `cliente` para negócio de produto. A resposta devolve o `group_by` usado — sempre informe ao gestor.
+`get_ltv_analysis` agrega por **médico**, por **médico × especialidade** ou por **cliente**. O padrão acompanha a tela: `medico` para clínica, `cliente` para negócio de produto. A resposta devolve o `group_by` usado — sempre informe ao gestor.
 
 ### Por médico (`group_by=medico`)
 
-Responde "qual médico traz pacientes que voltam e gastam mais ao longo da vida?".
+Responde "qual médico traz pacientes que voltam, gastam mais e deixam mais margem ao longo da vida?".
 
-- **Atribuição por paciente**: cada paciente vai **inteiro** para o **médico com quem mais gastou** (empate → ordem alfabética). Toda a receita dele — inclusive exames, produtos e itens de outros médicos — entra na linha desse médico principal. Cada paciente aparece em uma linha só, e a soma das receitas por médico bate com a receita total
+- **Atribuição por paciente**: cada paciente vai **inteiro** para o **médico com quem mais gastou** (empate → ordem alfabética). Toda a receita dele — inclusive exames, produtos e itens de outros médicos — entra na linha desse médico principal, e o custo de cada um desses itens vai junto. Cada paciente aparece em uma linha só, e a soma das receitas por médico bate com a receita total
 - Por isso a receita de um médico no LTV **não é a produção dele**. O faturamento por executante está em `get_cost_analysis(view=by_provider)`; não compare os dois números
 - **`(sem médico)`** agrupa pacientes sem **nenhum** item com médico — tipicamente quem só fez exame de laboratório. Não é erro de cadastro por si só; se for grande, vale investigar
 - **Identidade do paciente**: `customer_reference` (prontuário). Venda sem prontuário conta como **paciente novo a cada venda** — a frequência dele é sempre 1,0 e o LTV vira o ticket. Se um médico tem muitos pacientes e `frequency` colada em 1,0, desconfie de prontuário faltando na importação antes de concluir que ele não fideliza
+- **`last_visit`**: data da venda mais recente com item **do próprio médico** — não a última compra dos pacientes atribuídos a ele. É o que diz se o médico ainda atende na clínica
+
+### Por médico × especialidade (`group_by=medico_especialidade`)
+
+Responde "o médico X ganha mais como geriatra ou como clínico geral?". Mesmas colunas do modo médico, mais `especialidade`.
+
+- A especialidade vem do **item de consulta**: descrição começando com `CONSULTA`, sem o prefixo e sem a modalidade no fim — "CONSULTA GERIATRIA PRESENCIAL" → `Geriatria`
+- O paciente continua **inteiro no médico principal** e, dentro dele, vai para **uma especialidade só**: a das consultas em que mais gastou com esse médico. Um médico que atende duas especialidades vira duas linhas, sem contar paciente duas vezes — a soma das linhas bate com o modo médico
+- Paciente sem consulta com o médico principal no recorte herda a especialidade do médico quando ele só atende uma; com mais de uma, cai em **`(sem especialidade)`**. É comum em médico que faz exame ou procedimento (ultrassom, por exemplo), ou quando a consulta ficou fora do período
+- O resumo é o mesmo do modo médico
 
 ### Por cliente (`group_by=cliente`)
 
@@ -36,7 +46,7 @@ Responde "quem são meus melhores clientes?" e "quem parou de comprar?".
 
 ## Métricas
 
-**Por médico** — linhas:
+**Por médico** (e por médico × especialidade) — linhas:
 
 | Campo           | Significa |
 |-----------------|-----------|
@@ -46,8 +56,11 @@ Responde "quem são meus melhores clientes?" e "quem parou de comprar?".
 | `avg_ticket`    | Receita por visita |
 | `revenue`       | Receita total dos pacientes do médico |
 | `ltv`           | Receita por paciente (`revenue ÷ patient_count` = ticket × frequência) |
+| `last_visit`    | Última venda com item do próprio médico (`YYYY-MM-DD` — apresente como DD/MM/YYYY) |
 
-Resumo: `total_revenue`, `patient_count` (distintos no conjunto inteiro), `visit_count`, `doctor_count`, `avg_ltv`, `avg_ticket`.
+Mais os campos de margem (§ Margem) e, por paciente e por visita: `gross_margin_per_patient`, `contribution_margin_per_patient`, `gross_margin_per_visit`, `contribution_margin_per_visit`.
+
+Resumo: `total_revenue`, `patient_count` (distintos no conjunto inteiro), `visit_count`, `doctor_count`, `avg_ltv`, `avg_ticket`, os totais de margem, `premises_pct`, `avg_contribution_margin_per_patient` e `avg_contribution_margin_per_visit`.
 
 **Por cliente** — linhas:
 
@@ -58,47 +71,87 @@ Resumo: `total_revenue`, `patient_count` (distintos no conjunto inteiro), `visit
 | `revenue` / `ltv` | Receita total do cliente — aqui os dois são o mesmo número |
 | `last_purchase` | Data da última compra (`YYYY-MM-DD` — apresente como DD/MM/YYYY) |
 
-Resumo: `total_revenue`, `customer_count`, `order_count`, `repeat_customers` (clientes com 2+ pedidos), `repeat_rate` (% recorrentes), `avg_ltv`, `avg_ticket`, `avg_orders`.
+Mais os campos de margem e, por pedido: `gross_margin_per_order`, `contribution_margin_per_order`. Em cliente a `contribution_margin` da linha já é "quanto esse cliente deixou".
 
-O **resumo é sempre do conjunto inteiro**: `search` e `min_orders` filtram só as linhas (e o `total` de linhas), nunca o resumo.
+Resumo: `total_revenue`, `customer_count`, `order_count`, `repeat_customers` (clientes com 2+ pedidos), `repeat_rate` (% recorrentes), `avg_ltv`, `avg_ticket`, `avg_orders`, os totais de margem, `premises_pct`, `avg_contribution_margin_per_customer` e `avg_contribution_margin_per_order`.
+
+O **resumo é sempre do conjunto inteiro**: `search`, `min_orders`, `min_patients` e `active_since` filtram só as linhas (e o `total` de linhas), nunca o resumo.
+
+## Margem
+
+Campos em toda linha (e somados no resumo):
+
+| Campo | Significa |
+|-------|-----------|
+| `total_cost` | Custo de todos os itens da linha |
+| `gross_margin` / `gross_margin_pct` | Receita − custo; % sobre a receita |
+| `premises` | Receita × `premises_pct` (premissas ativas da tela Análise de Custos) |
+| `contribution_margin` / `contribution_margin_pct` | Margem bruta − premissas; % sobre a receita |
+| `revenue_without_cost` / `revenue_without_cost_pct` | Receita de itens sem custo cadastrado (custo R$ 0,00) — quanto da margem está inflada |
+
+- **É o mesmo custo da `get_cost_analysis` na base venda**: mesma vigência (data da venda), histórico do executante antes do padrão, fator de unidade e quantidade, e pagamento dividido em duas formas contado como um procedimento só. Com `from`/`to`, a soma de `revenue` e de `gross_margin` das linhas bate com `get_cost_analysis(view=summary, basis=venda)` do mesmo período. **Não bate com a base produção**, que é o padrão da `get_cost_analysis` em clínica — ao conferir, passe `basis=venda`
+- **Nunca calcule a margem do médico à mão** (LTV × `margin_pct` de `get_cost_analysis(view=by_provider)`). O `by_provider` mede só a produção do próprio médico; o paciente que ele traz compra também laboratório, imagem e exames de outros executantes, com margens muito diferentes. A margem certa já vem na linha
+- **Para decidir onde investir, compare `contribution_margin_per_patient`** (ganho por paciente trazido) e `contribution_margin_per_visit` (ganho por atendimento), não o LTV: médico de LTV alto pode trazer paciente de cesta com margem baixa
+- `premises_pct` em 0% → margem de contribuição igual à bruta; avise que as premissas não estão configuradas (skill `cost-analysis`)
 
 ## Escopo: lifetime vs período
 
 - **Sem `from`/`to`** → histórico completo (`scope: lifetime`). É o LTV de verdade e o padrão
-- **Com `from` e `to`** (os dois, `YYYY-MM-DD`) → `scope: periodo`, filtrado pela data da venda. O número passa a ser **receita por paciente no período**, não lifetime
+- **Com `from` e `to`** (os dois, `YYYY-MM-DD`) → `scope: periodo`, filtrado pela data da venda. O número passa a ser **receita (e margem) por paciente no período**, não lifetime
 
 Recorte de um mês quase sempre dá `frequency` perto de 1,0 e LTV ≈ ticket — pouco informativo. Para tendência, compare janelas longas e iguais (ano contra ano, 12 meses contra os 12 anteriores), nunca um mês contra o lifetime. Sempre diga ao gestor qual escopo o número mede.
+
+## Filtros de linha
+
+- `search`: nome do médico, da especialidade (em `medico_especialidade`) ou do cliente, sem diferenciar maiúsculas
+- `min_patients` (só médico e médico × especialidade): esconde linhas com menos pacientes — base pequena distorce a margem por paciente. Use 10 como ponto de partida
+- `active_since` (só médico e médico × especialidade, `YYYY-MM-DD`): só linhas com `last_visit` a partir da data — tira quem saiu da clínica. A importação pode estar atrasada: tome como "hoje" a maior `last_visit` que a tool devolver e recue daí (90 dias é um bom padrão)
+- `min_orders` (só cliente): mínimo de pedidos — 2 = só recorrentes
+
+Filtro da dimensão errada volta erro (ex.: `min_patients` em cliente).
 
 ## Receitas por pergunta
 
 | Pergunta do gestor | Chamada |
 |--------------------|---------|
-| Quais médicos trazem os pacientes mais valiosos? | `get_ltv_analysis(group_by=medico)` — já vem por `ltv` decrescente |
+| Onde investir em marketing? Qual médico traz o paciente que mais deixa margem? | `get_ltv_analysis(group_by=medico, sort_by=contribution_margin_per_patient, min_patients=10, active_since=...)` |
+| Qual médico dá mais ganho por atendimento? | idem com `sort_by=contribution_margin_per_visit` |
+| O médico X ganha mais em qual especialidade? | `get_ltv_analysis(group_by=medico_especialidade, search="nome")` |
+| Qual especialidade dá mais margem por paciente? | `get_ltv_analysis(group_by=medico_especialidade, sort_by=contribution_margin_per_patient, min_patients=10)` e agrupe as linhas por `especialidade` somando receita, margem e pacientes |
+| Quais médicos trazem os pacientes mais valiosos (em receita)? | `get_ltv_analysis(group_by=medico)` — já vem por `ltv` decrescente |
 | Qual médico mais fideliza? | `get_ltv_analysis(group_by=medico, sort_by=frequency)` |
 | Qual médico atende mais pacientes? | `get_ltv_analysis(group_by=medico, sort_by=patient_count)` |
-| Quem são meus melhores clientes? | `get_ltv_analysis(group_by=cliente, limit=20)` |
+| Quem são meus melhores clientes? | `get_ltv_analysis(group_by=cliente, sort_by=contribution_margin, limit=20)` — por margem; por receita, o padrão (`ltv`) |
 | Quanto da base volta a comprar? | `summary.repeat_rate` e `summary.avg_orders` do modo cliente |
 | Clientes recorrentes que pararam de comprar | `get_ltv_analysis(group_by=cliente, min_orders=2, sort_by=last_purchase, direction=asc)` |
 | Como está o médico X / o cliente Y? | `search="nome"` na dimensão certa |
 | O LTV deste ano está melhor que o do ano passado? | duas chamadas com `from`/`to` de cada ano, uma depois da outra |
 
-`sort_by` aceita só os campos da dimensão: `ltv`, `revenue`, `patient_count`, `visit_count`, `frequency`, `avg_ticket` em médico; `ltv`, `revenue`, `orders`, `avg_ticket`, `last_purchase` em cliente. `min_orders` só existe em cliente. Paginação por `limit` (padrão 20, máx. 200) e `offset`, com `has_more`.
+`sort_by` aceita só os campos da dimensão:
+
+- médico e médico × especialidade: `ltv`, `revenue`, `patient_count`, `visit_count`, `frequency`, `avg_ticket`, `contribution_margin_per_patient`, `contribution_margin_per_visit`, `gross_margin_per_patient`, `contribution_margin_pct`
+- cliente: `ltv`, `revenue`, `orders`, `avg_ticket`, `last_purchase`, `contribution_margin`, `contribution_margin_pct`, `contribution_margin_per_order`
+
+Paginação por `limit` (padrão 20, máx. 200) e `offset`, com `has_more`.
 
 ## Leitura crítica
 
-- **Amostra pequena engana.** LTV alto com 3 pacientes é ruído. Ao ranquear, mostre `patient_count` / `orders` ao lado do LTV e destaque só quem tem base razoável (ordem de grandeza: 10+ pacientes)
+- **Amostra pequena engana.** LTV ou margem por paciente alta com 3 pacientes é ruído. Ao ranquear, mostre `patient_count` / `orders` ao lado e destaque só quem tem base razoável (`min_patients=10`)
+- **`revenue_without_cost_pct` alto** → margem inflada por item sem custo cadastrado. Acima de ~10% na linha, avise antes de recomendar o médico e aponte `get_cost_analysis(view=missing_costs)` / `/pontoalto:costs` para cadastrar o custo. Uma médica com papanicolau e DIU sem custo pode ter um terço da receita "de graça"
+- **Médico que saiu** → `last_visit` antiga. Não recomende investimento em quem não atende mais: use `active_since` ou confira a data
 - **Frequência 1,0 em massa** → suspeita de prontuário (`customer_reference`) faltando na importação, não de falta de retorno
 - **`(sem médico)` grande** → muitos pacientes só de exame/produto, ou `provider_name` não vindo na importação
+- **`(sem especialidade)` grande** em um médico → ele atende várias especialidades e muitos pacientes só fizeram exame ou procedimento com ele no recorte
 - **Cliente em duplicidade** (mesmo nome com grafias diferentes, sem CPF) → recompra subnotificada; aponte ao gestor em vez de somar por conta própria
 - **Nunca compare escopos diferentes** (lifetime com período, ou períodos de tamanhos diferentes)
 - **Não misture com DRE**: receita do LTV vem das vendas, a do DRE vem dos lançamentos por competência. Divergem legitimamente
 
 ## Tool pesada e sem cache
 
-`get_ltv_analysis` varre **todos os itens de venda do histórico** a cada chamada e passa pelo semáforo de tools pesadas (máx. 2 simultâneas no servidor). Diferente de `get_cost_analysis`, **não há cache entre chamadas**: cada página, ordenação ou filtro refaz a varredura.
+`get_ltv_analysis` varre **todos os itens de venda do histórico** e precifica cada um a cada chamada, e passa pelo semáforo de tools pesadas (máx. 2 simultâneas no servidor). Diferente de `get_cost_analysis`, **não há cache entre chamadas**: cada página, ordenação ou filtro refaz a varredura.
 
 - Chame em sequência, nunca em paralelo com outra tool pesada
-- Prefira **uma chamada com `limit` maior** (50-100) e responda várias perguntas com ela, em vez de paginar ou reordenar várias vezes
+- Prefira **uma chamada com `limit` maior** (50-100) e responda várias perguntas com ela — reordenar e filtrar por base mínima ou por `last_visit` dá para fazer sobre as linhas recebidas quando `has_more=false`
 - Em `Servidor ocupado, tente novamente em alguns segundos`: aguarde 10 s e repita a mesma chamada uma vez
 
 ## Dados pessoais (LGPD)
@@ -107,12 +160,13 @@ No modo cliente a resposta traz o **nome completo** do cliente (CPF não sai). A
 
 ## Escrita
 
-Nenhuma. LTV é só leitura — não existe action de LTV e nada desta análise vira sugestão na inbox. Se a leitura revelar problema de dado (prontuário faltando, fornecedor sem nome), o conserto é na importação ou nos cadastros, não aqui.
+Nenhuma. LTV é só leitura — não existe action de LTV e nada desta análise vira sugestão na inbox. Se a leitura revelar problema de dado (prontuário faltando, fornecedor sem nome, item sem custo), o conserto é na importação, nos cadastros ou em `set_item_cost` pela skill `cost-analysis`, não aqui.
 
 ## Regras de ouro
 
 - Informe sempre `group_by` e escopo (`lifetime` ou o período) junto do número
-- LTV é receita, não margem — margem é `cost-analysis`
-- Mostre a base (`patient_count` / `orders`) ao lado de qualquer LTV
+- Para decidir investimento, compare margem de contribuição por paciente, não LTV — e nunca LTV × margem do `by_provider`
+- Mostre a base (`patient_count` / `orders`) e `revenue_without_cost_pct` ao lado de qualquer margem
+- Não recomende médico sem conferir `last_visit`
 - Uma chamada bem dimensionada vale mais que várias pequenas: a tool não tem cache
-- Priorize por receita: o cliente de R$ 40.000,00 importa mais que dez de R$ 400,00
+- Priorize por impacto: o cliente de R$ 40.000,00 importa mais que dez de R$ 400,00
