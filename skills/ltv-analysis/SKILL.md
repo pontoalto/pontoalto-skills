@@ -1,7 +1,7 @@
 ---
 name: ltv-analysis
 description: "LTV (lifetime value) no PontoAlto: get_ltv_analysis por médico, por médico × especialidade (clínica) ou por cliente (negócio de produto), com a margem da cesta inteira do paciente (custo, margem bruta, premissas e margem de contribuição por paciente e por visita). Três visões de atribuição ao médico (maior gasto, primeiro médico, separado), identidade do cliente, lifetime vs período, recompra, onde investir em marketing e clientes recorrentes que pararam de comprar. Só leitura."
-version: 0.4.0
+version: 0.5.0
 ---
 
 # LTV — Lifetime Value
@@ -22,7 +22,8 @@ O LTV **não sai do extrato bancário**. Ele lê as **vendas importadas** (`Sale
 
 Responde "qual médico traz pacientes que voltam, gastam mais e deixam mais margem ao longo da vida?" — ou, na visão separada, "quanto cada médico produz".
 
-- **Atribuição**: o parâmetro `attribution` decide a qual médico cada item vai (§ Visões de atribuição). Sem ele, `maior_gasto`, a mesma visão que a tela abre
+- **Atribuição**: o parâmetro `attribution` decide a qual médico cada item vai (§ Visões de atribuição). Sem ele, `maior_gasto`
+- **A tela abre diferente da tool**: em "Por médico" + `separado`, ordenada por MC/paciente e escondendo linhas com menos de 5 pacientes. Para bater com o que o gestor está vendo, chame com `attribution=separado`, `sort_by=contribution_margin_per_patient` e `min_patients=5`. A tela também tem a visão "Por especialidade" (uma linha por especialidade, somando os médicos); na tool, use `group_by=medico_especialidade` e some as linhas da mesma especialidade — em `separado`, sem somar pacientes, que podem se repetir entre médicos
 - **Identidade do paciente**: `customer_reference` (prontuário). Venda sem prontuário conta como **paciente novo a cada venda** — a frequência dele é sempre 1,0 e o LTV vira o ticket. Se um médico tem muitos pacientes e `frequency` colada em 1,0, desconfie de prontuário faltando na importação antes de concluir que ele não fideliza
 - **`last_visit`**: data da venda mais recente com item **do próprio médico** — não a última compra dos pacientes atribuídos a ele. É o que diz se o médico ainda atende na clínica, e é a mesma nas três visões
 
@@ -189,7 +190,7 @@ Nenhuma. LTV é só leitura — não existe action de LTV e nada desta análise 
 ## Regras de ouro
 
 - Informe sempre `group_by`, `attribution` (por médico) e escopo (`lifetime` ou o período) junto do número
-- Para marketing, `primeiro_medico`; para produção, `separado`; `maior_gasto` é a visão da tela
+- Para marketing, `primeiro_medico`; para produção, `separado` (a visão que a tela abre); `maior_gasto` é o padrão da tool
 - Para decidir investimento, compare margem de contribuição por paciente, não LTV — e nunca LTV × margem do `by_provider`
 - Mostre a base (`patient_count` / `orders`) e `revenue_without_cost_pct` ao lado de qualquer margem
 - Não recomende médico sem conferir `last_visit`
