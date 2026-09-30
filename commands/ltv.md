@@ -38,7 +38,7 @@ get_ltv_analysis(tenant_id, [group_by], [attribution], [from, to], limit=100)
 
 A tool é pesada e **não tem cache**: cada chamada varre e precifica todo o histórico de vendas. Não chame em paralelo com outra tool pesada e não pagine à toa. Se vier `Servidor ocupado, tente novamente em alguns segundos`, aguarde 10 s e repita a mesma chamada uma vez.
 
-Apresentar o resumo (receita **e** margem) e as 10 primeiras linhas, e em seguida as observações da skill `ltv-analysis` § Leitura crítica que se aplicarem (amostra pequena, `revenue_without_cost_pct` alto, `last_visit` antiga, `frequency` colada em 1,0, `(sem médico)` grande). Se `summary.premises_pct` vier 0%, avisar que as premissas não estão configuradas e a margem de contribuição é igual à bruta.
+Apresentar o resumo (receita **e** margem) e as 10 primeiras linhas, e em seguida as observações da skill `ltv-analysis` § Leitura crítica que se aplicarem (amostra pequena, `revenue_without_cost_pct` alto, `last_visit` antiga, `frequency` colada em 1,0, `(sem médico)` grande). Se `summary.premises_pct` vier 0%, avisar que o LTV está sem premissas e a margem de contribuição é igual à bruta — configuram-se na tela do LTV (Editar premissas, ou Copiar da Análise de Custos).
 
 ## Escolha do subfluxo
 

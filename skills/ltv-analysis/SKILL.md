@@ -1,7 +1,7 @@
 ---
 name: ltv-analysis
 description: "LTV (lifetime value) no PontoAlto: get_ltv_analysis por médico, por médico × especialidade (clínica) ou por cliente (negócio de produto), com a margem da cesta inteira do paciente (custo, margem bruta, premissas e margem de contribuição por paciente e por visita). Três visões de atribuição ao médico (maior gasto, primeiro médico, separado), identidade do cliente, lifetime vs período, recompra, onde investir em marketing e clientes recorrentes que pararam de comprar. Só leitura."
-version: 0.3.0
+version: 0.4.0
 ---
 
 # LTV — Lifetime Value
@@ -32,7 +32,7 @@ Responde "qual médico traz pacientes que voltam, gastam mais e deixam mais marg
 |-------|-------|----------|
 | `maior_gasto` (padrão) | Paciente **inteiro** no profissional com quem mais gastou no recorte (empate → ordem alfabética) | "De quem é o paciente?" |
 | `primeiro_medico` | Paciente **inteiro** no médico da **primeira consulta**; sem consulta, no primeiro profissional que o atendeu. Mais de um no mesmo dia → o de maior valor naquele dia | "Quem trouxe o paciente?" — a visão para marketing |
-| `separado` | Cada item no profissional do **próprio item**. Item sem profissional vai para o médico da consulta da mesma venda → senão quem atendeu na venda → senão a última consulta → senão a próxima → senão `(sem médico)` | "Quanto cada médico produz, e quanto o paciente gasta com ele?" |
+| `separado` | Cada item no profissional do **próprio item**. Item sem profissional vai para o médico da consulta da mesma venda → senão quem atendeu na venda → senão a última consulta → senão a próxima → senão `(sem médico)`. Consulta sem profissional fica em `(sem médico)` — consulta não é pedida por outro médico | "Quanto cada médico produz, e quanto o paciente gasta com ele?" |
 
 - **Consulta** é o item cuja descrição começa com `CONSULTA` e que tem profissional. Primeira, última e próxima consulta olham só consultas: o laboratório pago junto com a consulta e um ultrassom foi pedido na consulta, não pelo ultrassonografista
 - **Com período**, primeira e última consulta olham o histórico do paciente até o `to`, inclusive antes do `from` — a consulta de junho continua dona do exame de julho. Nada depois do `to` entra, então um período fechado não muda quando chegam vendas novas
@@ -51,7 +51,9 @@ Responde "o médico X ganha mais como geriatra ou como clínico geral?". Mesmas 
 - A especialidade vem do **item de consulta**: descrição começando com `CONSULTA`, sem o prefixo e sem a modalidade no fim — "CONSULTA GERIATRIA PRESENCIAL" → `Geriatria`
 - Dentro do médico a que foi atribuído, o paciente vai para **uma especialidade só**: a das consultas em que mais gastou com esse médico. Um médico que atende duas especialidades vira duas linhas, sem contar paciente duas vezes dentro dele — a soma das linhas bate com o modo médico na mesma visão
 - Aceita `attribution` como o modo médico. Em `separado` a especialidade é decidida por paciente × médico: o mesmo paciente pode ser Geriatria num médico e Cardiologia em outro
-- Paciente sem consulta com o médico no recorte herda a especialidade do médico quando ele só atende uma; com mais de uma, cai em **`(sem especialidade)`**. É comum em médico que faz exame ou procedimento (ultrassom, por exemplo), ou quando a consulta ficou fora do período
+- Paciente sem consulta com o médico no recorte herda a especialidade do médico quando ele só atende uma; com mais de uma, cai em **`(sem especialidade)`** — comum quando o paciente só fez exame ou procedimento com ele, ou a consulta ficou fora do período
+- **Profissional que não faz consulta** (ultrassonografista, ecocardiograma, fisioterapia, grupos como "Exames Cardiologicos") leva como especialidade o **grupo do procedimento** em que mais fatura — o `Grupo` do Feegow: "Ultrassonografia Geral", "Fisioterapia", "Exames Cardiologicos". Fonte de venda sem grupo deixa esses profissionais em `(sem especialidade)`
+- **`(sem médico)`** é sempre uma linha só, com `(sem especialidade)`: sem médico, dividir por especialidade só espalharia poucos pacientes em muitas linhas
 - O resumo é o mesmo do modo médico
 
 ### Por cliente (`group_by=cliente`)
@@ -102,14 +104,15 @@ Campos em toda linha (e somados no resumo):
 |-------|-----------|
 | `total_cost` | Custo de todos os itens da linha |
 | `gross_margin` / `gross_margin_pct` | Receita − custo; % sobre a receita |
-| `premises` | Receita × `premises_pct` (premissas ativas da tela Análise de Custos) |
+| `premises` | Receita × `premises_pct` (premissas ativas do LTV — veja abaixo) |
 | `contribution_margin` / `contribution_margin_pct` | Margem bruta − premissas; % sobre a receita |
 | `revenue_without_cost` / `revenue_without_cost_pct` | Receita de itens sem custo cadastrado (custo R$ 0,00) — quanto da margem está inflada |
 
 - **É o mesmo custo da `get_cost_analysis` na base venda**: mesma vigência (data da venda), histórico do executante antes do padrão, fator de unidade e quantidade, e pagamento dividido em duas formas contado como um procedimento só. Com `from`/`to`, a soma de `revenue` e de `gross_margin` das linhas bate com `get_cost_analysis(view=summary, basis=venda)` do mesmo período. **Não bate com a base produção**, que é o padrão da `get_cost_analysis` em clínica — ao conferir, passe `basis=venda`
 - **Nunca calcule a margem do médico à mão** (LTV × `margin_pct` de `get_cost_analysis(view=by_provider)`). O `by_provider` mede só a produção do próprio médico; o paciente que ele traz compra também laboratório, imagem e exames de outros executantes, com margens muito diferentes. A margem certa já vem na linha
 - **Para decidir onde investir, compare `contribution_margin_per_patient`** (ganho por paciente trazido) e `contribution_margin_per_visit` (ganho por atendimento), não o LTV: médico de LTV alto pode trazer paciente de cesta com margem baixa
-- `premises_pct` em 0% → margem de contribuição igual à bruta; avise que as premissas não estão configuradas (skill `cost-analysis`)
+- **As premissas são do LTV**: o gestor edita na tela do LTV (barra de premissas → Editar premissas). Enquanto não salvar as próprias, valem as da Análise de Custos; o botão "Copiar da Análise de Custos" traz as de lá de novo. `summary.premises_pct` diz o total usado — não assuma que é o mesmo da `get_cost_analysis`
+- `premises_pct` em 0% → margem de contribuição igual à bruta; avise que o LTV está sem premissas e que elas se configuram na tela do LTV (ou copiando da Análise de Custos)
 
 ## Escopo: lifetime vs período
 
@@ -162,7 +165,7 @@ Paginação por `limit` (padrão 20, máx. 200) e `offset`, com `has_more`.
 - **`(sem médico)` grande** → muitos pacientes só de exame/produto, ou `provider_name` não vindo na importação
 - **Soma de pacientes em `separado`** → passa do resumo por construção (o paciente conta em cada médico). Nunca some `patient_count` das linhas nem divida a receita total por essa soma
 - **"Médico" que não faz consulta no topo em `maior_gasto`** → ele fica com o paciente por fazer o item caro. Antes de recomendar, veja a mesma pergunta em `primeiro_medico`
-- **`(sem especialidade)` grande** em um médico → ele atende várias especialidades e muitos pacientes só fizeram exame ou procedimento com ele no recorte
+- **`(sem especialidade)` grande** em um médico → ele atende várias especialidades e muitos pacientes só fizeram exame ou procedimento com ele no recorte. Em profissional que não faz consulta, é fonte de venda sem o grupo do procedimento
 - **Cliente em duplicidade** (mesmo nome com grafias diferentes, sem CPF) → recompra subnotificada; aponte ao gestor em vez de somar por conta própria
 - **Nunca compare escopos diferentes** (lifetime com período, ou períodos de tamanhos diferentes)
 - **Não misture com DRE**: receita do LTV vem das vendas, a do DRE vem dos lançamentos por competência. Divergem legitimamente
