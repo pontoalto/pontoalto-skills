@@ -61,6 +61,11 @@ Todos os commands aceitam a flag `--local` para apontar para o MCP server de des
 /pontoalto:ltv especialidade
 ```
 
+**Quem trouxe os pacientes mais lucrativos (médico da primeira consulta):**
+```
+/pontoalto:ltv primeiro
+```
+
 **Relatório de um mês específico:**
 ```
 /pontoalto:report 2026-03

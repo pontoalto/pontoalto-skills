@@ -1,7 +1,7 @@
 ---
 name: ltv-analysis
-description: "LTV (lifetime value) no PontoAlto: get_ltv_analysis por médico, por médico × especialidade (clínica) ou por cliente (negócio de produto), com a margem da cesta inteira do paciente (custo, margem bruta, premissas e margem de contribuição por paciente e por visita). Atribuição do paciente ao médico principal, identidade do cliente, lifetime vs período, recompra, onde investir em marketing e clientes recorrentes que pararam de comprar. Só leitura."
-version: 0.2.0
+description: "LTV (lifetime value) no PontoAlto: get_ltv_analysis por médico, por médico × especialidade (clínica) ou por cliente (negócio de produto), com a margem da cesta inteira do paciente (custo, margem bruta, premissas e margem de contribuição por paciente e por visita). Três visões de atribuição ao médico (maior gasto, primeiro médico, separado), identidade do cliente, lifetime vs período, recompra, onde investir em marketing e clientes recorrentes que pararam de comprar. Só leitura."
+version: 0.3.0
 ---
 
 # LTV — Lifetime Value
@@ -16,25 +16,42 @@ O LTV **não sai do extrato bancário**. Ele lê as **vendas importadas** (`Sale
 
 ## As dimensões
 
-`get_ltv_analysis` agrega por **médico**, por **médico × especialidade** ou por **cliente**. O padrão acompanha a tela: `medico` para clínica, `cliente` para negócio de produto. A resposta devolve o `group_by` usado — sempre informe ao gestor.
+`get_ltv_analysis` agrega por **médico**, por **médico × especialidade** ou por **cliente**. O padrão acompanha a tela: `medico` para clínica, `cliente` para negócio de produto. A resposta devolve o `group_by` usado e, por médico, o `attribution` — sempre informe os dois ao gestor.
 
 ### Por médico (`group_by=medico`)
 
-Responde "qual médico traz pacientes que voltam, gastam mais e deixam mais margem ao longo da vida?".
+Responde "qual médico traz pacientes que voltam, gastam mais e deixam mais margem ao longo da vida?" — ou, na visão separada, "quanto cada médico produz".
 
-- **Atribuição por paciente**: cada paciente vai **inteiro** para o **médico com quem mais gastou** (empate → ordem alfabética). Toda a receita dele — inclusive exames, produtos e itens de outros médicos — entra na linha desse médico principal, e o custo de cada um desses itens vai junto. Cada paciente aparece em uma linha só, e a soma das receitas por médico bate com a receita total
-- Por isso a receita de um médico no LTV **não é a produção dele**. O faturamento por executante está em `get_cost_analysis(view=by_provider)`; não compare os dois números
-- **`(sem médico)`** agrupa pacientes sem **nenhum** item com médico — tipicamente quem só fez exame de laboratório. Não é erro de cadastro por si só; se for grande, vale investigar
+- **Atribuição**: o parâmetro `attribution` decide a qual médico cada item vai (§ Visões de atribuição). Sem ele, `maior_gasto`, a mesma visão que a tela abre
 - **Identidade do paciente**: `customer_reference` (prontuário). Venda sem prontuário conta como **paciente novo a cada venda** — a frequência dele é sempre 1,0 e o LTV vira o ticket. Se um médico tem muitos pacientes e `frequency` colada em 1,0, desconfie de prontuário faltando na importação antes de concluir que ele não fideliza
-- **`last_visit`**: data da venda mais recente com item **do próprio médico** — não a última compra dos pacientes atribuídos a ele. É o que diz se o médico ainda atende na clínica
+- **`last_visit`**: data da venda mais recente com item **do próprio médico** — não a última compra dos pacientes atribuídos a ele. É o que diz se o médico ainda atende na clínica, e é a mesma nas três visões
+
+### Visões de atribuição (`attribution`, só por médico)
+
+| Visão | Regra | Responde |
+|-------|-------|----------|
+| `maior_gasto` (padrão) | Paciente **inteiro** no profissional com quem mais gastou no recorte (empate → ordem alfabética) | "De quem é o paciente?" |
+| `primeiro_medico` | Paciente **inteiro** no médico da **primeira consulta**; sem consulta, no primeiro profissional que o atendeu. Mais de um no mesmo dia → o de maior valor naquele dia | "Quem trouxe o paciente?" — a visão para marketing |
+| `separado` | Cada item no profissional do **próprio item**. Item sem profissional vai para o médico da consulta da mesma venda → senão quem atendeu na venda → senão a última consulta → senão a próxima → senão `(sem médico)` | "Quanto cada médico produz, e quanto o paciente gasta com ele?" |
+
+- **Consulta** é o item cuja descrição começa com `CONSULTA` e que tem profissional. Primeira, última e próxima consulta olham só consultas: o laboratório pago junto com a consulta e um ultrassom foi pedido na consulta, não pelo ultrassonografista
+- **Com período**, primeira e última consulta olham o histórico do paciente até o `to`, inclusive antes do `from` — a consulta de junho continua dona do exame de julho. Nada depois do `to` entra, então um período fechado não muda quando chegam vendas novas
+- **Só a atribuição muda**: receita, custo, margens, pacientes e visitas do resumo são os mesmos nas três visões; só `doctor_count` muda. A soma das receitas das linhas sempre bate com a receita total
+- **Em `maior_gasto` e `primeiro_medico`** cada paciente aparece em uma linha só, e a cesta inteira dele (exames, produtos, itens de outros médicos) vai junto, com o custo. Por isso a receita do médico **não é a produção dele**
+- **Em `separado`** o paciente conta em **cada médico que o atendeu**: a soma de `patient_count` das linhas passa do resumo — nunca some pacientes entre linhas. O LTV da linha é "quanto o paciente gasta com esse médico", não o valor total do paciente. Também não é o `get_cost_analysis(view=by_provider)`: os itens sem profissional (laboratório, imagem) entram no médico que os pediu
+- **Profissional que não faz consulta** (ultrassonografista, fisioterapia, grupos como "Exames Cardiologicos") pode ficar com muitos pacientes em `maior_gasto`, porque faz o item caro. Em `primeiro_medico` só fica com quem nunca passou por consulta; em `separado`, só com a própria produção. Se o gestor estranhar um desses no topo, mostre a mesma pergunta em `primeiro_medico`
+- **`(sem médico)`**: em `maior_gasto` e `primeiro_medico`, pacientes sem **nenhum** item com profissional — tipicamente quem só fez exame de laboratório. Em `separado`, também os itens sem profissional de pacientes que nunca passaram por consulta. Não é erro de cadastro por si só; se for grande, vale investigar (consulta sem profissional na importação da agenda, por exemplo)
+- **Comparar visões** custa uma chamada por visão — a tool não tem cache. Faça em sequência, com o mesmo escopo
+- `attribution` com `group_by=cliente` volta erro: cliente não é atribuído a médico
 
 ### Por médico × especialidade (`group_by=medico_especialidade`)
 
 Responde "o médico X ganha mais como geriatra ou como clínico geral?". Mesmas colunas do modo médico, mais `especialidade`.
 
 - A especialidade vem do **item de consulta**: descrição começando com `CONSULTA`, sem o prefixo e sem a modalidade no fim — "CONSULTA GERIATRIA PRESENCIAL" → `Geriatria`
-- O paciente continua **inteiro no médico principal** e, dentro dele, vai para **uma especialidade só**: a das consultas em que mais gastou com esse médico. Um médico que atende duas especialidades vira duas linhas, sem contar paciente duas vezes — a soma das linhas bate com o modo médico
-- Paciente sem consulta com o médico principal no recorte herda a especialidade do médico quando ele só atende uma; com mais de uma, cai em **`(sem especialidade)`**. É comum em médico que faz exame ou procedimento (ultrassom, por exemplo), ou quando a consulta ficou fora do período
+- Dentro do médico a que foi atribuído, o paciente vai para **uma especialidade só**: a das consultas em que mais gastou com esse médico. Um médico que atende duas especialidades vira duas linhas, sem contar paciente duas vezes dentro dele — a soma das linhas bate com o modo médico na mesma visão
+- Aceita `attribution` como o modo médico. Em `separado` a especialidade é decidida por paciente × médico: o mesmo paciente pode ser Geriatria num médico e Cardiologia em outro
+- Paciente sem consulta com o médico no recorte herda a especialidade do médico quando ele só atende uma; com mais de uma, cai em **`(sem especialidade)`**. É comum em médico que faz exame ou procedimento (ultrassom, por exemplo), ou quando a consulta ficou fora do período
 - O resumo é o mesmo do modo médico
 
 ### Por cliente (`group_by=cliente`)
@@ -50,7 +67,7 @@ Responde "quem são meus melhores clientes?" e "quem parou de comprar?".
 
 | Campo           | Significa |
 |-----------------|-----------|
-| `patient_count` | Pacientes distintos atribuídos ao médico |
+| `patient_count` | Pacientes distintos atribuídos ao médico (em `separado`, os que ele atendeu — a soma das linhas passa do resumo) |
 | `visit_count`   | Vendas distintas desses pacientes |
 | `frequency`     | Visitas por paciente (`visit_count ÷ patient_count`) |
 | `avg_ticket`    | Receita por visita |
@@ -114,13 +131,15 @@ Filtro da dimensão errada volta erro (ex.: `min_patients` em cliente).
 
 | Pergunta do gestor | Chamada |
 |--------------------|---------|
-| Onde investir em marketing? Qual médico traz o paciente que mais deixa margem? | `get_ltv_analysis(group_by=medico, sort_by=contribution_margin_per_patient, min_patients=10, active_since=...)` |
+| Onde investir em marketing? Qual médico traz o paciente que mais deixa margem? | `get_ltv_analysis(group_by=medico, attribution=primeiro_medico, sort_by=contribution_margin_per_patient, min_patients=10, active_since=...)` |
 | Qual médico dá mais ganho por atendimento? | idem com `sort_by=contribution_margin_per_visit` |
+| Quanto cada médico produz, contando os exames que pede? | `get_ltv_analysis(group_by=medico, attribution=separado, sort_by=revenue)` |
+| Por que um grupo de exames ou um ultrassonografista aparece com tantos pacientes? | a mesma chamada em `maior_gasto` e depois em `primeiro_medico`, e compare `patient_count` |
 | O médico X ganha mais em qual especialidade? | `get_ltv_analysis(group_by=medico_especialidade, search="nome")` |
 | Qual especialidade dá mais margem por paciente? | `get_ltv_analysis(group_by=medico_especialidade, sort_by=contribution_margin_per_patient, min_patients=10)` e agrupe as linhas por `especialidade` somando receita, margem e pacientes |
-| Quais médicos trazem os pacientes mais valiosos (em receita)? | `get_ltv_analysis(group_by=medico)` — já vem por `ltv` decrescente |
-| Qual médico mais fideliza? | `get_ltv_analysis(group_by=medico, sort_by=frequency)` |
-| Qual médico atende mais pacientes? | `get_ltv_analysis(group_by=medico, sort_by=patient_count)` |
+| Quais médicos trazem os pacientes mais valiosos (em receita)? | `get_ltv_analysis(group_by=medico, attribution=primeiro_medico)` — já vem por `ltv` decrescente |
+| Qual médico mais fideliza? | `get_ltv_analysis(group_by=medico, attribution=separado, sort_by=frequency)` — retornos ao próprio médico |
+| Qual médico atende mais pacientes? | `get_ltv_analysis(group_by=medico, attribution=separado, sort_by=patient_count)` |
 | Quem são meus melhores clientes? | `get_ltv_analysis(group_by=cliente, sort_by=contribution_margin, limit=20)` — por margem; por receita, o padrão (`ltv`) |
 | Quanto da base volta a comprar? | `summary.repeat_rate` e `summary.avg_orders` do modo cliente |
 | Clientes recorrentes que pararam de comprar | `get_ltv_analysis(group_by=cliente, min_orders=2, sort_by=last_purchase, direction=asc)` |
@@ -141,6 +160,8 @@ Paginação por `limit` (padrão 20, máx. 200) e `offset`, com `has_more`.
 - **Médico que saiu** → `last_visit` antiga. Não recomende investimento em quem não atende mais: use `active_since` ou confira a data
 - **Frequência 1,0 em massa** → suspeita de prontuário (`customer_reference`) faltando na importação, não de falta de retorno
 - **`(sem médico)` grande** → muitos pacientes só de exame/produto, ou `provider_name` não vindo na importação
+- **Soma de pacientes em `separado`** → passa do resumo por construção (o paciente conta em cada médico). Nunca some `patient_count` das linhas nem divida a receita total por essa soma
+- **"Médico" que não faz consulta no topo em `maior_gasto`** → ele fica com o paciente por fazer o item caro. Antes de recomendar, veja a mesma pergunta em `primeiro_medico`
 - **`(sem especialidade)` grande** em um médico → ele atende várias especialidades e muitos pacientes só fizeram exame ou procedimento com ele no recorte
 - **Cliente em duplicidade** (mesmo nome com grafias diferentes, sem CPF) → recompra subnotificada; aponte ao gestor em vez de somar por conta própria
 - **Nunca compare escopos diferentes** (lifetime com período, ou períodos de tamanhos diferentes)
@@ -164,7 +185,8 @@ Nenhuma. LTV é só leitura — não existe action de LTV e nada desta análise 
 
 ## Regras de ouro
 
-- Informe sempre `group_by` e escopo (`lifetime` ou o período) junto do número
+- Informe sempre `group_by`, `attribution` (por médico) e escopo (`lifetime` ou o período) junto do número
+- Para marketing, `primeiro_medico`; para produção, `separado`; `maior_gasto` é a visão da tela
 - Para decidir investimento, compare margem de contribuição por paciente, não LTV — e nunca LTV × margem do `by_provider`
 - Mostre a base (`patient_count` / `orders`) e `revenue_without_cost_pct` ao lado de qualquer margem
 - Não recomende médico sem conferir `last_visit`
