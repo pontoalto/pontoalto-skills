@@ -22,8 +22,8 @@ O LTV **não sai do extrato bancário**. Ele lê as **vendas importadas** (`Sale
 
 Responde "qual médico traz pacientes que voltam, gastam mais e deixam mais margem ao longo da vida?" — ou, na visão separada, "quanto cada médico produz".
 
-- **Atribuição**: o parâmetro `attribution` decide a qual médico cada item vai (§ Visões de atribuição). Sem ele, `maior_gasto`
-- **A tela abre diferente da tool**: em "Por médico" + `separado`, ordenada por MC/paciente e escondendo linhas com menos de 5 pacientes. Para bater com o que o gestor está vendo, chame com `attribution=separado`, `sort_by=contribution_margin_per_patient` e `min_patients=5`. A tela também tem a visão "Por especialidade" (uma linha por especialidade, somando os médicos); na tool, use `group_by=medico_especialidade` e some as linhas da mesma especialidade — em `separado`, sem somar pacientes, que podem se repetir entre médicos
+- **Atribuição**: o parâmetro `attribution` decide a qual médico cada item vai (§ Visões de atribuição). Sem ele, `separado` — o mesmo da tela
+- **A tela ordena e filtra diferente da tool**: abre em "Por médico" + `separado` (a mesma atribuição da tool), mas ordenada por MC/paciente e escondendo linhas com menos de 5 pacientes. Para bater com o que o gestor está vendo, chame com `sort_by=contribution_margin_per_patient` e `min_patients=5`. A tela também tem a visão "Por especialidade" (uma linha por especialidade, somando os médicos); na tool, use `group_by=medico_especialidade` e some as linhas da mesma especialidade — em `separado`, sem somar pacientes, que podem se repetir entre médicos
 - **Identidade do paciente**: `customer_reference` (prontuário). Venda sem prontuário conta como **paciente novo a cada venda** — a frequência dele é sempre 1,0 e o LTV vira o ticket. Se um médico tem muitos pacientes e `frequency` colada em 1,0, desconfie de prontuário faltando na importação antes de concluir que ele não fideliza
 - **`last_visit`**: data da venda mais recente com item **do próprio médico** — não a última compra dos pacientes atribuídos a ele. É o que diz se o médico ainda atende na clínica, e é a mesma nas três visões
 
@@ -31,9 +31,9 @@ Responde "qual médico traz pacientes que voltam, gastam mais e deixam mais marg
 
 | Visão | Regra | Responde |
 |-------|-------|----------|
-| `maior_gasto` (padrão) | Paciente **inteiro** no profissional com quem mais gastou no recorte (empate → ordem alfabética) | "De quem é o paciente?" |
+| `maior_gasto` | Paciente **inteiro** no profissional com quem mais gastou no recorte (empate → ordem alfabética) | "De quem é o paciente?" |
 | `primeiro_medico` | Paciente **inteiro** no médico da **primeira consulta**; sem consulta, no primeiro profissional que o atendeu. Mais de um no mesmo dia → o de maior valor naquele dia | "Quem trouxe o paciente?" — a visão para marketing |
-| `separado` | Cada item no profissional do **próprio item**. Item sem profissional vai para o médico da consulta da mesma venda → senão quem atendeu na venda → senão a última consulta → senão a próxima → senão `(sem médico)`. Consulta sem profissional fica em `(sem médico)` — consulta não é pedida por outro médico | "Quanto cada médico produz, e quanto o paciente gasta com ele?" |
+| `separado` (padrão) | Cada item no profissional do **próprio item**. Item sem profissional vai para o médico da consulta da mesma venda → senão quem atendeu na venda → senão a última consulta → senão a próxima → senão `(sem médico)`. Consulta sem profissional fica em `(sem médico)` — consulta não é pedida por outro médico | "Quanto cada médico produz, e quanto o paciente gasta com ele?" |
 
 - **Consulta** é o item cuja descrição começa com `CONSULTA` e que tem profissional. Primeira, última e próxima consulta olham só consultas: o laboratório pago junto com a consulta e um ultrassom foi pedido na consulta, não pelo ultrassonografista
 - **Com período**, primeira e última consulta olham o histórico do paciente até o `to`, inclusive antes do `from` — a consulta de junho continua dona do exame de julho. Nada depois do `to` entra, então um período fechado não muda quando chegam vendas novas
@@ -190,7 +190,7 @@ Nenhuma. LTV é só leitura — não existe action de LTV e nada desta análise 
 ## Regras de ouro
 
 - Informe sempre `group_by`, `attribution` (por médico) e escopo (`lifetime` ou o período) junto do número
-- Para marketing, `primeiro_medico`; para produção, `separado` (a visão que a tela abre); `maior_gasto` é o padrão da tool
+- Para marketing, `primeiro_medico`; para produção, `separado` (o padrão da tool e a visão que a tela abre); para "de quem é o paciente", `maior_gasto`
 - Para decidir investimento, compare margem de contribuição por paciente, não LTV — e nunca LTV × margem do `by_provider`
 - Mostre a base (`patient_count` / `orders`) e `revenue_without_cost_pct` ao lado de qualquer margem
 - Não recomende médico sem conferir `last_visit`

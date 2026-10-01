@@ -1,6 +1,6 @@
 ---
 description: "LTV (lifetime value) no PontoAlto: valor e margem de cada paciente/cliente ao longo do tempo, por médico, por médico × especialidade (clínica) ou por cliente (produto) — onde investir em marketing, recompra e clientes recorrentes que pararam de comprar. Só consulta."
-argument-hint: "[--local] [medico|especialidade|cliente] [primeiro|separado] [YYYY|YYYY-MM]"
+argument-hint: "[--local] [medico|especialidade|cliente] [maior|primeiro|separado] [YYYY|YYYY-MM]"
 ---
 
 # PontoAlto — LTV
@@ -18,7 +18,7 @@ Argumento recebido: `$ARGUMENTS`
 
 **Dimensão**: `medico`, `especialidade` (→ `group_by=medico_especialidade`) ou `cliente` nos argumentos força o `group_by`. Sem isso, deixe a tool escolher (médico em clínica, cliente em negócio de produto).
 
-**Visão** (só por médico): `primeiro` (→ `attribution=primeiro_medico`) ou `separado` (→ `attribution=separado`) nos argumentos força a atribuição. Sem isso, a tool usa `maior_gasto` — a tela abre em `separado`, ordenada por MC/paciente e com mínimo de 5 pacientes; se o gestor estiver comparando com a tela, use essa combinação. As regras de cada visão estão na skill `ltv-analysis` § Visões de atribuição.
+**Visão** (só por médico): `maior` (→ `attribution=maior_gasto`), `primeiro` (→ `attribution=primeiro_medico`) ou `separado` (→ `attribution=separado`) nos argumentos força a atribuição. Sem isso, a tool usa `separado`, como a tela — que além disso ordena por MC/paciente e esconde médicos com menos de 5 pacientes; se o gestor estiver comparando com a tela, use `sort_by=contribution_margin_per_patient` e `min_patients=5`. As regras de cada visão estão na skill `ltv-analysis` § Visões de atribuição.
 
 **Escopo**: sem período nos argumentos → histórico completo (lifetime, não passar `from`/`to`). `YYYY` → o ano inteiro (`YYYY-01-01` a `YYYY-12-31`). `YYYY-MM` → o mês, avisando que em um mês a frequência fica perto de 1 e o LTV se aproxima do ticket.
 
