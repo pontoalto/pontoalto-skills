@@ -16,6 +16,7 @@ pontoalto-skills/
 │   ├── bills.md           # /pontoalto:bills — Contas a Pagar/Receber (agenda, marcar pago, cancelar)
 │   ├── obras.md           # /pontoalto:obras — obras de incorporadora (cadastro, atribuição, resultado)
 │   ├── costs.md           # /pontoalto:costs — custos e margem por item (+ set_item_cost)
+│   ├── notas.md           # /pontoalto:notas — notas fiscais do DRE Contábil (classificar + vincular pagamento)
 │   ├── ltv.md             # /pontoalto:ltv — LTV e margem por médico, especialidade ou cliente (só consulta)
 │   ├── report.md          # /pontoalto:report — relatório mensal
 │   └── sale-source.md     # /pontoalto:sale-source — fonte de venda customizada (DSL + preview loop)
@@ -28,6 +29,8 @@ pontoalto-skills/
 │   │   └── SKILL.md       # Liquidações e conciliação de vendas
 │   ├── cost-analysis/
 │   │   └── SKILL.md       # Custo do item vendido, margem, markup, base venda vs produção, set_item_cost
+│   ├── fiscal-classification/
+│   │   └── SKILL.md       # Notas fiscais: classify_fiscal_items, link_fiscal_payment, conciliação automática, LGPD
 │   ├── ltv-analysis/
 │   │   └── SKILL.md       # LTV e margem por médico/especialidade/cliente, atribuição, identidade, lifetime vs período, recompra
 │   ├── provider-management/
@@ -53,6 +56,7 @@ Namespaceados automaticamente pelo `name` do plugin (`pontoalto`):
 - `/pontoalto:bills [--local]` — Contas a Pagar/Receber (agenda, marcar como pago, cancelar série)
 - `/pontoalto:obras [--local] [obra]` — obras de incorporadora: cadastro, atribuição de lançamentos, resultado por empreendimento
 - `/pontoalto:costs [--local] [YYYY-MM]` — análise de custos: itens sem custo cadastrado (e a sugestão que fecha a lacuna), margem por tipo e por fornecedor, itens com pior margem
+- `/pontoalto:notas [--local] [YYYY-MM] [classificar|pagamentos]` — notas fiscais do DRE Contábil: itens sem classificação (com pistas do histórico) e notas recebidas sem pagamento vinculado, via sugestões `classify_fiscal_items` e `link_fiscal_payment`
 - `/pontoalto:ltv [--local] [medico|especialidade|cliente] [primeiro|separado] [YYYY|YYYY-MM]` — LTV e margem por médico, por médico × especialidade (clínica) ou por cliente (produto), nas visões maior gasto, primeiro médico ou separado: onde investir em marketing (margem de contribuição por paciente), recompra, clientes recorrentes que pararam de comprar. Só consulta; padrão é o histórico completo
 - `/pontoalto:report [--local] [YYYY-MM]` — relatório mensal (DRE, orçado vs realizado, custos)
 - `/pontoalto:sale-source [--local] [nome|key]` — monta/ajusta fonte de venda customizada via DSL + preview iterativo (admin-only)
@@ -75,6 +79,7 @@ As instruções dos MCP servers (convenções de R$, datas, modelo de escrita vi
 - `reconciliation` — liquidações e conciliação detalhada
 - `cost-analysis` — custo do item vendido (`SaleItem` × `CostItem`, casamento por nome), as sete views do `get_cost_analysis`, base de data venda vs produção, margem bruta vs de contribuição, markup como multiplicador, e a action `set_item_cost` (cadastra item + vigência pela inbox, com âncora `cost_item` ou `sale_item` conforme o item já exista)
 - `ltv-analysis` — `get_ltv_analysis`: três visões de atribuição ao médico (`attribution`: paciente inteiro no médico com quem mais gastou, paciente inteiro no médico da primeira consulta, ou cada item em quem o atendeu), especialidade por paciente dentro do médico em `medico_especialidade`, identidade do cliente (CPF → nome → referência), margem da cesta inteira do paciente (mesmo custo da `get_cost_analysis` base venda — nunca LTV × margem do `by_provider`), filtros `min_patients`/`active_since`, lifetime vs período, métricas de recompra, leitura crítica (amostra pequena, receita sem custo, médico que saiu, prontuário faltando) e o aviso de que a tool é pesada e sem cache. Só leitura
+- `fiscal-classification` — notas fiscais do DRE Contábil: o que o sistema já faz sozinho (regras na importação e conciliação nota × pagamento com certeza pelo CNPJ no PIX ou pelo fornecedor), `analyze_fiscal_classification` (grupos pendentes com `suggested_categories` por contraparte, pagamentos do fornecedor e serviço), `list_fiscal_documents` (candidatos com `confirmed_by`), as actions `classify_fiscal_items` (com `create_rule`) e `link_fiscal_payment` com `suggestable_type="fiscal_document"`, e a regra de LGPD (paciente é só "Pessoa física")
 - `provider-management` — fornecedores e competência
 - `bills-management` — Contas a Pagar/Receber: agendamento (single/recorrente), marcação como pago (via extrato ou Caixa) e cancelamento de séries — sempre via sugestões na inbox
 - `project-management` — obras de incorporadora. Obra→Etapa é hierarquia; Tipo de Custo é dimensão global (não é nível da árvore). Cadastro é escrita direta admin-only (`save_project`, `save_cost_type`, `delete_project`), mas **atribuir** obra a lançamento passa pela inbox via action `link_project`

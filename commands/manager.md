@@ -44,6 +44,7 @@ O gestor segue estas etapas diariamente, nesta ordem. Cada etapa depende da ante
 7. **Custos de Itens** — `get_cost_analysis(view=missing_costs)` → itens faturados sem custo cadastrado, seguir skill `cost-analysis`.
 8. **Contas a Pagar/Receber** — `get_bills_aging` → se `overdue.count > 0` ou contas vencendo no mês, seguir skill `bills-management` (marcar como pago, agendar novas, cancelar séries obsoletas).
 9. **Obras** *(só incorporadoras)* — `get_project_results` → se o bloco `unassigned` tiver lançamentos, seguir skill `project-management` para atribuí-los às obras. Pule esta etapa quando `list_projects` vier vazio: o tenant não é do ramo.
+10. **Notas Fiscais** *(DRE Contábil)* — `analyze_fiscal_classification` → se `summary.pending_items > 0`, ou `list_fiscal_documents(role=destinatario, payment=sem_pagamento)` com notas, seguir skill `fiscal-classification`. Pule quando as duas vierem vazias: o tenant ainda não importa notas.
 
 ## Status do Fluxo
 
@@ -98,6 +99,7 @@ Se o gestor quiser pular direto para uma etapa específica, oriente-o a usar um 
 - `/pontoalto:bills` — Contas a Pagar/Receber (agendamento, marcação como pago, cancelamento)
 - `/pontoalto:obras` — obras de incorporadora: cadastro, atribuição de lançamentos, resultado por obra (etapa 9)
 - `/pontoalto:costs` — custos e margem por item vendido, e o custo que falta cadastrar (etapa 7)
+- `/pontoalto:notas` — notas fiscais do DRE Contábil: classificar itens e vincular notas aos pagamentos (etapa 10)
 - `/pontoalto:ltv` — LTV e margem por médico, especialidade ou cliente: onde investir em marketing, recompra, clientes que pararam de comprar
 - `/pontoalto:report` — relatório mensal consolidado (DRE, orçado vs realizado, custos)
 
