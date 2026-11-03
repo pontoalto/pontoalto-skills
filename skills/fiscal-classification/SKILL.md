@@ -13,6 +13,9 @@ As notas chegam do Ambiente Nacional (NFS-e), da SEFAZ (NF-e recebidas) ou por u
 - **Regras de classificação** (CNPJ do emitente, código de serviço, NCM, CFOP) levam cada item à categoria do DRE Contábil
 - **Conciliação nota × pagamento**: nota recebida com **um único** lançamento de saída (banco ou caixa) no mesmo valor, perto da emissão, **confirmado pelo fornecedor** — o PIX imprime o começo do CNPJ do recebedor ("Pagamento Pix 29.482.4") ou o lançamento já está no fornecedor da nota — é vinculada automaticamente. A categoria passa de um lado para o outro (lançamento categorizado → itens herdam; nota classificada → lançamento recebe) e o lançamento ganha o fornecedor
 - Pagamento só **provável** (valor e data, sem confirmação) já vira sugestão `link_fiscal_payment` na inbox, feita pelo próprio sistema
+- **Nota cancelada, substituída ou denegada** solta o pagamento vinculado e tem a sugestão de vínculo pendente rejeitada — na chegada do evento ou na conciliação de hora em hora — para a nota que vale (a reemitida) encontrar o lançamento. `link_fiscal_payment` recusa nota cancelada
+
+Antes de o gestor aprovar em lote as sugestões de vínculo do sistema, aponte as que ligam a nota a um lançamento categorizado em **repasse ou transferência** (ex.: "Repasse Rio Claro"): ao vincular, os itens da nota herdam essa categoria e saem do DRE Contábil. É o caso típico de fornecedor que atende duas unidades com dois pagamentos gêmeos no mês — a nota da unidade vai com o pagamento dela, não com o da outra.
 
 O seu trabalho é o que sobra: itens sem regra e pagamentos que o sistema não conseguiu decidir.
 
@@ -97,7 +100,7 @@ Nota emitida para pessoa física (paciente, cliente final) aparece só como **"P
 
 - Aprovação é **manual**, na tela da inbox (tipos "Classificar Nota" e "Nota × Pagamento") — o plugin cria, não aprova
 - O resultado aparece no DRE Contábil: `get_reports(report=dre_contabil, from, to)`. Item pendente não entra no DRE — receita de nota emitida sem classificação fica de fora até o gestor aprovar
-- Desfazer na inbox devolve itens e lançamento ao estado anterior; com regra criada, a regra é desativada
+- **Desfazer só existe logo depois de aprovar**: o botão "Desfazer" aparece no aviso do topo da inbox e some quando a página recarrega. Ele devolve itens e lançamento ao estado anterior; com regra criada, a regra é desativada. Depois disso não há como desvincular nota × pagamento (nem pelo MCP) — por isso revise o lote antes de o gestor aprovar
 
 ## Regras de Ouro
 
