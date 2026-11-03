@@ -26,7 +26,7 @@ Você continua no controle: toda operação de escrita passa por sugestões na i
 | `/pontoalto:costs`       | Ver onde o resultado se forma: margem por tipo de item e por fornecedor, itens com pior margem, e cadastrar pela inbox o custo dos itens que ainda não têm. |
 | `/pontoalto:notas`       | Notas fiscais do DRE Contábil: classificar os itens das notas emitidas e recebidas que nenhuma regra resolveu e vincular notas de fornecedor aos pagamentos do extrato. O que o sistema casa com certeza já entra sozinho. |
 | `/pontoalto:ltv`         | Ver quanto cada paciente ou cliente vale — e quanto deixa de margem — ao longo do tempo: onde investir em marketing (médicos e especialidades que trazem o paciente mais lucrativo), melhores clientes, taxa de recompra e clientes recorrentes que pararam de comprar. |
-| `/pontoalto:report`      | Gerar relatório mensal consolidado: DRE, orçado vs realizado e análise de custos. |
+| `/pontoalto:report`      | Gerar relatório mensal consolidado: DRE, orçado vs realizado e análise de custos. Se você pedir, traz também o DRE Contábil com os impostos do mês (base, alíquota, valor e vencimento). |
 | `/pontoalto:sale-source` | Montar ou ajustar uma fonte de venda customizada (CSV de sistema ainda não integrado), com loop de preview iterativo. |
 
 Todos os commands aceitam a flag `--local` para apontar para o MCP server de desenvolvimento local (útil para testes).

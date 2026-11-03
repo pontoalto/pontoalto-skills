@@ -62,6 +62,8 @@ As duas views de `get_cost_analysis` do mesmo período compartilham cache no ser
 
 **Regime do DRE**: o padrão é competência (`basis=competencia`). Se o gestor pedir "DRE por caixa" / "regime de caixa", passar `basis=caixa` em `get_reports` e indicar o regime no cabeçalho do relatório.
 
+**DRE Contábil e impostos**: se o gestor pedir o DRE contábil, os impostos ou as guias do mês, chamar também `get_reports(report=dre_contabil, from=YYYY-MM-DD, to=YYYY-MM-DD)`, depois das outras (também é pesada). Apresentar a tabela de impostos (`taxes`: imposto, base, alíquota, valor, vencimento) e repassar os `warnings`. Não confrontar com as guias pagas do extrato — no contábil vale o imposto do mês da nota (skill `financial-domain`). Com o aviso "Sem perfil fiscal vigente", dizer que o imposto não foi calculado.
+
 ## Formato de Saída
 
 Apresentar em **markdown estruturado**:
@@ -78,6 +80,8 @@ Gerado em: DD/MM/YYYY
 ### 2. DRE Resumida
 
 Tabela com: Receita Bruta, Deduções, Receita Líquida, Custos, Lucro Bruto, Despesas Operacionais, Resultado. Valores em R$ formato brasileiro.
+
+No DRE gerencial, a taxa de cartão (MDR) fica nas Deduções e a taxa de antecipação de recebíveis no Resultado Financeiro (Despesas Financeiras) — não some a antecipação às deduções.
 
 ### 3. Orçado vs. Realizado
 

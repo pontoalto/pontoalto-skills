@@ -1,7 +1,7 @@
 ---
 name: fiscal-classification
 description: "Notas fiscais do DRE Contábil no PontoAlto: classificar itens de NFS-e/NF-e emitidas e recebidas (analyze_fiscal_classification + classify_fiscal_items com regra) e vincular nota recebida ao pagamento do extrato (list_fiscal_documents + link_fiscal_payment), sempre via sugestões na inbox. Inclui o que o sistema já faz sozinho (regras e conciliação automática com certeza) e o cuidado com dados de paciente."
-version: 0.1.0
+version: 0.2.0
 ---
 
 # Notas Fiscais (DRE Contábil)
@@ -59,8 +59,13 @@ Fluxo:
 - `suggestable_id` **precisa** ser igual a `action_params.fiscal_document_id` — o servidor recusa a combinação trocada
 - `create_rule: true` cria a regra do emitente + serviço (em nota emitida para pessoa física, a regra vale para o serviço de todos os tomadores pessoa física) e reaplica nas pendentes
 - `item_ids` só quando a nota mistura naturezas (NF-e com material + serviço); sem ele, todos os itens da nota
-- `presumption_group` só em nota emitida de Lucro Presumido com equiparação hospitalar (`servicos` para consulta, `hospitalar` para exame/procedimento)
+- `presumption_group` só em nota emitida de Lucro Presumido com equiparação hospitalar (`servicos` para consulta, `hospitalar` para exame/procedimento) — ver "Código de serviço e imposto"
 - `bulk_create_suggestions` **não** serve aqui — é só para lançamentos do extrato
+
+### Código de serviço e imposto
+
+- **Lucro Presumido**: a regra padrão da clínica põe 04.02 (exames) e 04.03 (procedimentos) no grupo hospitalar, que só vale 8%/12% com equiparação no perfil fiscal. **Consulta faturada com 04.03 continua serviços (32%)**: se o grupo é de consulta, passe `presumption_group: "servicos"`. Há clínica que emite tudo com 04.01.01, inclusive exame — aí o código não separa consulta de exame, e a pista é a categoria
+- **Lucro Real**: sem marcação na categoria, o subitem do item decide se o PIS/COFINS é cumulativo (04.01, 04.02, 04.03, 04.08, 04.12 e 04.19) ou não cumulativo (o resto) — ver `financial-domain`. A classificação não muda isso; a marcação fica no cadastro da categoria. Nota de obstetrícia (04.11), reprodução assistida (04.18) ou coleta (04.20) emitida por clínica médica ou laboratório: avise o gestor para marcar a categoria como cumulativa
 
 ## Vincular nota ao pagamento
 

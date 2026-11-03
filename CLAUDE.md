@@ -22,7 +22,7 @@ pontoalto-skills/
 │   └── sale-source.md     # /pontoalto:sale-source — fonte de venda customizada (DSL + preview loop)
 ├── skills/
 │   ├── financial-domain/
-│   │   └── SKILL.md       # Confidence scale, contexto financeiro brasileiro, exceções
+│   │   └── SKILL.md       # Confidence scale, contexto financeiro brasileiro, DRE Contábil e impostos por regime, taxas de cartão, exceções
 │   ├── categorization/
 │   │   └── SKILL.md       # Fluxo automático, consulta e manual de categorização + split
 │   ├── reconciliation/

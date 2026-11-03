@@ -1,7 +1,7 @@
 ---
 name: financial-domain
-description: "Contexto de domínio financeiro brasileiro que complementa as instruções do MCP PontoAlto: escala de confidence, regimes tributários, DRE por competência, repasses de adquirente de cartão e tipos de reconciliação."
-version: 0.5.0
+description: "Contexto de domínio financeiro brasileiro que complementa as instruções do MCP PontoAlto: escala de confidence, regimes tributários, DRE por competência, DRE Contábil e impostos por regime (PIS/COFINS cumulativo × não cumulativo, IRPJ/CSLL anual ou trimestral, prejuízo fiscal), taxas de cartão (MDR e antecipação), repasses de adquirente de cartão e tipos de reconciliação."
+version: 0.6.0
 ---
 
 # PontoAlto — Domínio Financeiro
@@ -32,6 +32,31 @@ Usada para decidir se cria sugestão, apresenta ao gestor ou descarta.
 - **Tipos de reconciliação**:
   - OFX ↔ Transaction: extrato bancário bate com lançamento importado
   - Sale ↔ Transaction: venda do sistema origem (ERP, PDV ou outro) bate com recebimento bancário
+
+## DRE Contábil e Impostos
+
+`get_reports(report=dre_contabil)` é outro relatório que o `dre`: monta o resultado por competência com as notas fiscais classificadas, os lançamentos manuais e os impostos calculados pelo regime — o extrato só entra nas contas com fonte "extrato". Cada grupo traz `managerial_total` (o mesmo grupo no DRE gerencial): diferença entre os dois é esperada, não erro.
+
+- **No contábil vale o imposto calculado, não a guia**: nas contas de imposto, o DARF/DAS/ISS pago no extrato não entra — entra o imposto do mês da nota, ou o valor apurado que o gestor registrou na tela. A guia continua no DRE gerencial e no fluxo de caixa. Nunca some a guia ao imposto do contábil
+- **Sem perfil fiscal, sem imposto**: o aviso "Sem perfil fiscal vigente…" em `warnings` quer dizer que o DRE Contábil não calculou imposto nenhum naquele mês. Diga ao gestor que falta cadastrar o perfil fiscal; não estime o imposto pela guia paga
+- **Repasse sempre os `warnings`**: notas a classificar, imposto sem categoria marcada, saldo de prejuízo fiscal não registrado, perfil no regime de caixa
+- **Memorial**: cada item de `taxes` traz `base`, `rate`, `memo` (a conta passo a passo), `withheld` e `due_date`. `estimated=true` é estimativa (Lucro Real: o valor oficial vem do e-Lalur); `informed_return=true` é o valor apurado registrado pelo gestor
+- **O MCP não grava nada disso**: valor apurado, saldo de prejuízo fiscal, perfil fiscal e as marcações fiscais da categoria são feitos na tela (página DRE Contábil, cadastro do perfil fiscal e de categoria). Oriente o gestor — não existe action para isso
+
+### Lucro Real
+
+- **PIS/COFINS cumulativo × não cumulativo** (até 12/2026; a partir de 2027 dão lugar à CBS):
+  - **Cumulativo (0,65% + 3%)**: a receita marcada na categoria ("PIS/COFINS no Lucro Real", herdada da categoria pai); sem marcação, nota dos serviços do art. 10, XIII, da Lei 10.833 — subitens 04.01 medicina, 04.02 exames e imagem, 04.03 hospital, clínica e laboratório, 04.08 fisioterapia e fonoaudiologia, 04.12 odontologia e 04.19 banco de sangue — e, em clínica, a receita sem nota
+  - **Não cumulativo (1,65% + 7,6%)**: o resto, inclusive enfermagem, nutrição, psicologia, casa de repouso e planos de saúde, menos os créditos
+  - **Créditos**: custos de categoria marcada "gera crédito de PIS/COFINS". Custo comum às duas receitas é rateado pela proporção da receita não cumulativa; custo marcado "só da receita não cumulativa" entra inteiro; o crédito que sobra passa para os meses seguintes, inclusive de um ano para o outro. Clínica com toda a receita no cumulativo praticamente não usa crédito — é normal
+  - Obstetrícia (04.11), reprodução assistida (04.18) e coleta (04.20) dependem de quem presta: não são cumulativas automáticas. Se a clínica médica ou o laboratório presta, a categoria precisa da marcação de cumulativo
+- **IRPJ/CSLL**: anual por estimativa (LAIR acumulado no ano, guia todo mês) ou trimestral, conforme o perfil fiscal (cada trimestre fecha sozinho; a guia vence no último dia útil do mês seguinte ao trimestre). A provisão do mês é o devido no acumulado menos o que já foi provisionado
+- **Prejuízo fiscal de anos anteriores**: compensa até 30% do lucro com o saldo do início do ano (Parte B do e-Lalur), registrado pelo gestor na página do DRE Contábil, um por ano. No trimestral, o prejuízo de um trimestre soma ao saldo dos seguintes. O saldo não passa sozinho para o ano seguinte — o aviso "Saldo de prejuízo fiscal de AAAA não registrado" pede o do ano
+
+### Taxas de cartão
+
+- **MDR** (taxa da maquininha): fica nas deduções do DRE gerencial (custo variável de cada venda, entra na margem de contribuição) e vai para despesas operacionais no DRE Contábil (dedução contábil é só imposto sobre a venda, devolução e abatimento)
+- **Antecipação de recebíveis**: Resultado Financeiro → Despesas Financeiras nos dois DREs — é decisão de caixa, não custo da venda. Categorize na conta de antecipação de Despesas Financeiras, nunca junto da MDR nas deduções
 
 ## Reforço: Exceções ao Modelo de Sugestões
 
