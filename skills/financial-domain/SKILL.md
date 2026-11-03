@@ -1,7 +1,7 @@
 ---
 name: financial-domain
 description: "Contexto de domínio financeiro brasileiro que complementa as instruções do MCP PontoAlto: escala de confidence, regimes tributários, DRE por competência, DRE Contábil e impostos por regime (PIS/COFINS cumulativo × não cumulativo, IRPJ/CSLL anual ou trimestral, prejuízo fiscal), taxas de cartão (MDR e antecipação), repasses de adquirente de cartão e tipos de reconciliação."
-version: 0.6.0
+version: 0.7.0
 ---
 
 # PontoAlto — Domínio Financeiro
@@ -41,7 +41,39 @@ Usada para decidir se cria sugestão, apresenta ao gestor ou descarta.
 - **Sem perfil fiscal, sem imposto**: o aviso "Sem perfil fiscal vigente…" em `warnings` quer dizer que o DRE Contábil não calculou imposto nenhum naquele mês. Diga ao gestor que falta cadastrar o perfil fiscal; não estime o imposto pela guia paga
 - **Repasse sempre os `warnings`**: notas a classificar, imposto sem categoria marcada, saldo de prejuízo fiscal não registrado, perfil no regime de caixa
 - **Memorial**: cada item de `taxes` traz `base`, `rate`, `memo` (a conta passo a passo), `withheld` e `due_date`. `estimated=true` é estimativa (Lucro Real: o valor oficial vem do e-Lalur); `informed_return=true` é o valor apurado registrado pelo gestor
-- **O MCP não grava nada disso**: valor apurado, saldo de prejuízo fiscal, perfil fiscal e as marcações fiscais da categoria são feitos na tela (página DRE Contábil, cadastro do perfil fiscal e de categoria). Oriente o gestor — não existe action para isso
+- **Marcações fiscais da categoria vão pela inbox**: `set_category_accounting` (ver abaixo). Valor apurado, saldo de prejuízo fiscal e perfil fiscal continuam só na tela (página DRE Contábil e cadastro do perfil fiscal) — oriente o gestor, não existe action para eles
+
+### Marcar a categoria (`set_category_accounting`)
+
+`list_categories(all=true)` traz em `accounting` as marcações **próprias** de cada categoria (sem `accounting` = tudo herdado ou padrão). Para mudar, uma sugestão por categoria, em `create_suggestion` modo batch:
+
+```json
+{
+  "type": "category_accounting",
+  "suggestable_type": "category",
+  "suggestable_id": 67,
+  "action": "set_category_accounting",
+  "action_params": {"category_id": 67, "generates_pis_cofins_credit": true},
+  "confidence": 90,
+  "reasoning": "Contador confirmou o não cumulativo; energia elétrica gera crédito (Lei 10.833, art. 3º, III)."
+}
+```
+
+| Campo | Valores | Para quê |
+|---|---|---|
+| `pis_cofins_cumulative` | `true` cumulativo, `false` não cumulativo, `null` herdar | Regime do PIS/COFINS da receita no Lucro Real |
+| `generates_pis_cofins_credit` | bool | Custo que gera crédito (só compra de pessoa jurídica com documento) |
+| `pis_cofins_credit_non_cumulative_only` | bool | Custo só da receita não cumulativa: crédito inteiro, sem rateio |
+| `tax_kind` | `das` `iss` `pis` `cofins` `icms` `irpj` `csll` ou `null` | Categoria que recebe o imposto calculado (a guia do extrato deixa de somar) |
+| `accounting_source` | `nota` `extrato` `calculado` `manual` `patrimonial` ou `null` | De onde o DRE Contábil tira o valor |
+| `accounting_dre_group` | grupo do DRE ou `null` | Outro grupo só no contábil (ex.: MDR em despesas operacionais) |
+| `is_payroll`, `generates_icms_credit` | bool | Folha (Fator R) e crédito de ICMS |
+| `presumption_group` | `servicos` `hospitalar` ... ou `null` | Presunção do Lucro Presumido para receita sem nota |
+
+- Só os campos informados mudam; `null` volta a herdar da categoria pai
+- **A marcação desce para as subcategorias**, e o crédito ligado no pai não desliga na filha. Pai com filhas de natureza diferente (ex.: "Insumos e Materiais" com Medicamentos, que é monofásico e não gera crédito) → marque cada filha. O preview da inbox lista as subcategorias que herdam
+- Regime e créditos são decisão do contador: confirme com ele antes de propor; no `reasoning`, cite a confirmação e o fundamento
+- Depois de aprovar, confira em `get_reports(report=dre_contabil)` o memorial do PIS/COFINS (débito, créditos, saldo)
 
 ### Lucro Real
 

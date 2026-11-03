@@ -74,7 +74,7 @@ Os commands dependem dos MCP servers do PontoAlto:
 
 As instruções dos MCP servers (convenções de R$, datas, modelo de escrita via sugestões, actions disponíveis) vêm diretamente do próprio servidor. As skills do plugin complementam com o que o MCP não fornece:
 
-- `financial-domain` — escala de confidence, contexto financeiro brasileiro (regimes, DRE, adquirente de cartão), exceções ao modelo de sugestões
+- `financial-domain` — escala de confidence, contexto financeiro brasileiro (regimes, DRE, adquirente de cartão), marcações fiscais da categoria pela inbox (`set_category_accounting`), exceções ao modelo de sugestões
 - `categorization` — fluxos específicos de categorização (automático, consulta WhatsApp, manual) e divisão de lançamentos (`split_transaction`) quando um pagamento cobre naturezas diferentes
 - `reconciliation` — liquidações e conciliação detalhada
 - `cost-analysis` — custo do item vendido (`SaleItem` × `CostItem`, casamento por nome), as sete views do `get_cost_analysis`, base de data venda vs produção, margem bruta vs de contribuição, markup como multiplicador, e a action `set_item_cost` (cadastra item + vigência pela inbox, com âncora `cost_item` ou `sale_item` conforme o item já exista)
