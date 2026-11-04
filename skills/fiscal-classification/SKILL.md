@@ -1,7 +1,7 @@
 ---
 name: fiscal-classification
 description: "Notas fiscais do DRE Contábil no PontoAlto: classificar itens de NFS-e/NF-e emitidas e recebidas (analyze_fiscal_classification + classify_fiscal_items com regra) e vincular nota recebida ao pagamento do extrato (list_fiscal_documents + link_fiscal_payment), sempre via sugestões na inbox. Inclui o que o sistema já faz sozinho (regras e conciliação automática com certeza) e o cuidado com dados de paciente."
-version: 0.2.0
+version: 0.3.0
 ---
 
 # Notas Fiscais (DRE Contábil)
@@ -96,6 +96,14 @@ O sistema só deixa para você casos em que ele não teve certeza — por isso c
 ```
 
 Sem candidato: a nota pode ter sido paga no cartão de crédito (Google, Facebook), em boleto com valor diferente, agrupada com outras ou ainda não paga — reporte ao gestor, não force vínculo.
+
+## Matriz e filiais
+
+Cada tenant fica só com as notas do **CNPJ completo** do seu perfil fiscal. Nota de outro estabelecimento da mesma raiz não entra: na sincronização é contada à parte e no upload é recusada. Cada unidade é apurada separadamente; a soma da empresa é do contador.
+
+`list_fiscal_documents` traz `establishment` e `establishment_cnpj` em cada nota, aceita o filtro `establishment` (ordem do CNPJ, ex.: `0003`) e devolve `by_establishment` (quantidade e total por estabelecimento e papel, sem o `limit`).
+
+Despesa de uma unidade pode estar faturada no CNPJ de outra (conta de anúncios de filial no CNPJ da matriz). Antes de afirmar de quem é a nota, olhe `establishment`: a descrição diz a quem o gasto serve, não em que CNPJ a nota foi emitida. A filial precisa do próprio perfil fiscal para receber as notas dela; o certificado da matriz serve, porque a raiz é a mesma.
 
 ## Dados de paciente (LGPD)
 
