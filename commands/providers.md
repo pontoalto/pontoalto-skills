@@ -56,6 +56,10 @@ Apresentar via `AskUserQuestion`:
 4. Para recorrências confirmadas, sugerir `create_competence_rule`
 5. Contas ainda não efetivadas entram pelo mesmo caminho: `list_bills(status=scheduled)` para achar competência errada e `set_competence_date` com `bill_ids: [...]` e `suggestable_type=bill`. Volume alto (série antiga com competência congelada) é caso para a ação em lote **Ajustar Competência** na tela Contas a Pagar/Receber, não para dezenas de sugestões.
 
+## Identificar Lançamento — Detalhe
+
+Quando o gestor diz de quem é um lançamento que o extrato traz só com CPF mascarado (devolução a paciente, PIX para pessoa física): sugestão `set_label` com `transaction_ids` e o nome informado — ver skill `provider-management` § Identificar Quem Pagou ou Recebeu. A descrição do extrato não muda.
+
 ## Relatório Final
 
 Reportar:

@@ -47,7 +47,7 @@ Executar um subfluxo por vez, reportar resultado, perguntar se quer continuar pa
 ## Conciliar Vendas — Detalhe
 
 1. `analyze_unreconciled_sales` → retorna matches com score (valor + data + nome + método)
-2. **Score ≥ 80** — criar sugestões `reconcile_sale` em lote via `bulk_create_suggestions`
+2. **Score ≥ 80** — criar sugestões `reconcile_sale` em lote via `create_suggestion` em modo batch (`suggestions: [...]`, uma por par venda × lançamento). `bulk_create_suggestions` **não** serve aqui — ele só cria categorização. Formato: skill `reconciliation` § Criar as sugestões
 3. **Score 50-79** — apresentar ao gestor (pode ser texto WhatsApp ou tabela) para decisão
 4. **Sem match** — listar vendas sem candidato, sugerir investigar imports faltantes ou divergências de valor
 
@@ -59,6 +59,6 @@ Reportar ao final:
 ## Regras de Ouro
 
 - Liquidações de cartão/dinheiro são **escrita direta**, não criam sugestão
-- Conciliação de vendas passa por sugestão (`reconcile_sale`)
+- Conciliação de vendas passa por sugestão (`reconcile_sale`), criada com `create_suggestion` — nunca `bulk_create_suggestions`
 - Nunca categorizar repasse de adquirente de cartão como receita — é transferência
 - Priorizar por valor (maiores primeiro)

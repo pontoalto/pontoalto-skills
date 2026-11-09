@@ -1,7 +1,7 @@
 ---
 name: categorization
 description: "Fluxo completo de categorização de transações no PontoAlto: automático (analyze_uncategorized + suggest_category + bulk_create_suggestions), consulta (listar para WhatsApp), manual (gestor informa categoria) e divisão de lançamentos (split_transaction)."
-version: 0.4.0
+version: 0.5.0
 ---
 
 # Categorização de Lançamentos
@@ -131,7 +131,7 @@ Faltam estes pra fechar [mês]. Me diga a que se refere:
 
 4. **Sempre buscar detalhes de TODAS as transações** — não listar IDs sem nome/valor
 5. Ordenar por data (mais recente primeiro) ou valor (maior primeiro, conforme contexto)
-6. Após resposta do gestor, seguir o **Fluxo manual** abaixo
+6. Após resposta do gestor, seguir o **Fluxo manual** abaixo. Se a resposta disser também **de quem** é o lançamento (ex.: "devolução da paciente Fulana"), proponha junto um `set_label` com o nome — ver skill `provider-management` § Identificar Quem Pagou ou Recebeu
 7. **Se o gestor não responder:** não bloquear o workflow — avançar para a próxima etapa e retomar a categorização quando houver resposta
 
 ## Fluxo manual (gestor informa a categoria)

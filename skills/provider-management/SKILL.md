@@ -1,7 +1,7 @@
 ---
 name: provider-management
-description: "Ajuste de datas de competência (de lançamentos e de contas agendadas) e vinculação de fornecedores a transações no PontoAlto: analyze_provider_payments, link_provider, create_provider, set_competence_date."
-version: 0.3.0
+description: "Ajuste de datas de competência (de lançamentos e de contas agendadas), vinculação de fornecedores a transações e identificação de quem pagou ou recebeu no PontoAlto: analyze_provider_payments, link_provider, create_provider, set_competence_date, set_label."
+version: 0.4.0
 ---
 
 # Competência e Fornecedores
@@ -42,6 +42,31 @@ Transações de despesa precisam estar vinculadas ao fornecedor correto para an�
 1. Para matches com fornecedor existente: `bulk_create_suggestions` com `provider_groups=[...]`. Cria automaticamente **cadeia** (regra de vinculação + link) para cada grupo com `create_rule: true` — o par aparece na inbox como card único e é aceito/rejeitado atomicamente.
 2. Para empresas sem fornecedor cadastrado: usar `create_suggestion_chain` encadeando `create_provider` → `create_provider_linking_rule` → `link_provider` (ver § Criar Fornecedor Novo em Cadeia abaixo).
 3. Se há padrões recorrentes com fornecedor existente: o `create_rule: true` do `bulk_create_suggestions` já resolve.
+
+## Identificar Quem Pagou ou Recebeu (`set_label`)
+
+Todo lançamento tem a **Identificação** (`label`): o nome de quem pagou ou recebeu, que aparece no lugar da descrição nas telas e relatórios. O sistema preenche sozinho com o fornecedor vinculado, o pagador do PIX ou o beneficiário do boleto — mas só quando ela está vazia. Quando o extrato traz só o CPF mascarado (devolução PIX a paciente, PIX para pessoa física), o nome tem que vir do gestor.
+
+**Action:** `set_label` via `create_suggestion`.
+
+```json
+{
+  "type": "set_label",
+  "suggestable_type": "transaction",
+  "suggestable_id": <um dos ids de transaction_ids>,
+  "action": "set_label",
+  "action_params": {"transaction_ids": [<ids>], "label": "Nome informado pelo gestor"},
+  "confidence": 95,
+  "reasoning": "Gestor informou que a devolução de 20/10 é da paciente X"
+}
+```
+
+- Vários lançamentos da mesma pessoa vão numa sugestão só (`transaction_ids` com todos); pessoas diferentes, uma sugestão para cada — em lote com `create_suggestion` modo batch
+- Substitui a Identificação atual. A **descrição** original do extrato nunca muda — é nela que as regras de categoria e de fornecedor batem
+- O nome aprovado não é sobrescrito pelos preenchimentos automáticos
+- Máximo de 255 caracteres; nome vazio é recusado na criação
+- O nome vem do gestor. Não deduza por valor ou data de venda: `list_sales` mascara o nome do cliente, e `analyze_unreconciled_sales` só traz o nome de venda ainda não conciliada — casar uma devolução com uma venda pelo valor é palpite. Nunca complete nem corrija um nome por conta própria
+- Lançamento de fornecedor PJ: prefira `link_provider`, que preenche a Identificação com o nome do fornecedor e ainda alimenta a análise de custos
 
 ## Criar Fornecedor Novo em Cadeia
 
